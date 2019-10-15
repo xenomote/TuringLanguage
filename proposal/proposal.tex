@@ -1,0 +1,41 @@
+\documentclass[11pt]{report}
+\title{CS4099 Senior Honours Project\\Description, Objectives, Ethics and Resources}
+\author{Alexander Williamson\\160001209}
+\date{\today}
+
+\setlength\parskip{1em}
+\setlength\parindent{0em}
+
+\begin{document}
+    \maketitle
+    \newpage
+    \section*{Description}
+
+    In CS3052 last year one of the practicals involved Turing Machine programming. Some students achieved some remarkable results, but experience makes it clear that this is a rather tedious process. For example it is common to need to produce two different copies of a certain set of states, so that they can do the same things for a while, and then do something different. Similarly it is common to have “marked” versions of some of all tape symbols, which behave the same as the unmarked versions almost all the time. Writing out all the states and transitions for these devices by hand rapidly becomes tedious.
+
+    The goal of this project is to design and write a “compiler” for a somewhat higher level language which allows these kinds of devices to be expressed simply, while retaining the clear connection between what the student writes and the basic Turing Machine abstraction.   A possible extension would be to write an animated TM simulator that could be used with this language. Another possible extension would be debugging tools.
+
+    \section*{Objectives}
+
+    The primary objectives of this project are as follows:
+    \begin{itemize}     
+        \item to design a language which abstracts over the tedious implementation details of designing a turing machine and specifying its transition table.
+        \item to create a compiler or translator which converts programs in this high level language back to a full transition table specification for a turing machine.
+    \end{itemize}
+    \newpage
+    The secondary objectives of this project include the following:
+    \begin{itemize}
+        \item to create a visual simulator for the turing machines, showing the state machine and current state, as well as the contents of the tape and the position of the head, with the ability to step the computation forwards and possibly backwards too.
+        \item to create debugging tools for the turing machines, to allow the setting of breakpoints, analysis and profiling of behaviour, generate warnings and suggest optimisations.
+        \item to ensure all the suggested deliverables are capable of operating on both deterministic and non-deterministic turing machines.
+    \end{itemize}
+
+    \section*{Ethics}
+
+    This project is covered by the ethical application CS12476 with the artefact evaluation form.
+
+    \section*{Resources}
+
+    There are no resources required by this project.
+
+\end{document}
