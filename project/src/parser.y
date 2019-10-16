@@ -1,7 +1,11 @@
 %{
     #include <stdio.h>
+    #include "lex.yy.h"
 
     void yyerror(const char*);
+
+    extern void yy_push_state(int);
+    extern void yy_pop_state();
 
     extern int yylex();
     extern int yyparse();
@@ -29,14 +33,17 @@ groups: %empty | groups group;
 blocks: %empty | blocks block;
 
 group: IDENTIFIER '=' symbols;
-symbols: symbols ',' SYMBOL | SYMBOL;
+symbols: symbols ',' symbol | symbol;
+symbol: SYMBOL | "marked" SYMBOL
 
 block: IDENTIFIER ':' scope;
 
 scope: INDENT statement UNINDENT;
 statement:
-    "if" condition scope or else
-    | write travel transition
+    write travel transition
+    | "if" condition scope or else
+    | "accept"
+    | "reject"
     ;
 
 or: %empty | "or" condition scope;
@@ -44,30 +51,29 @@ else: "else" scope | NEWLINE statement;
 
 write: 
     %empty 
+    | "mark"
+    | "unmark"
     | "write" string reversal repetition
     ;
 
-travel: 
-    %empty
-    | "go" direction repetition until
-    ;
+travel: "go" direction repetition until;
 
 transition: 
-    "accept"
-    | "reject"
-    | "do" IDENTIFIER
+    "do" IDENTIFIER
     | NEWLINE statement
     ;
 
 direction: "left" | "right";
-string: string SYMBOL | SYMBOL;
+string: string symbol | symbol;
 reversal: %empty | "backwards";
-repetition: %empty | NUMBER "times";
+repetition: %empty |  NUMBER "times";
 until: %empty | "until" condition;
 
 condition:
-    SYMBOL
+    symbol
     | IDENTIFIER
+    | "marked"
+    | "unmarked"
     | condition "or" SYMBOL
     | condition "or" IDENTIFIER
     ;    
@@ -76,5 +82,5 @@ condition:
 
 void yyerror(const char* s)
 {
-
+    fprintf(stderr, "%s\n", s);
 }

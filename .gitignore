@@ -33,6 +33,7 @@
 
 # Flex and bison files
 *.yy.c
+*.yy.h
 *.tab.c
 *.tab.h
 *.tab.cc

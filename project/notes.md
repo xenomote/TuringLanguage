@@ -1,4 +1,20 @@
 wrote out a textual document of requirements.
 
-wrote a first draft of the grammar for the language, as well as writing out some example machines.
+wrote a first draft of the grammar for the language, as well as writing out some example machines. using the grammar
 
+bison:
+    www.gnu.org/software/bison/manual/bison.html
+
+flex:
+    ftp://ftp.gnu.org/old-gnu/Manuals/flex-2.5.4/html_mono/flex.html
+
+flex and bison tutorial:
+    www.aquamentus.com/flex_bison.html
+
+multiline comments:
+    www.westes.github.io/flex/manual/How-can-I-match-C_002dstyle-comments_003f.html
+
+whitespace based indentation:
+    https://stackoverflow.com/questions/1413204/how-to-use-indentation-as-block-delimiters-with-bison-and-flex
+
+got flex and bison working to parse the grammar

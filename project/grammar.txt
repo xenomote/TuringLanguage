@@ -2,14 +2,19 @@ program ->
     | 
 
 group ->
-    | IDENTIFIER "=" SYMBOL {"," SYMBOL}
+    | IDENTIFIER "=" symbol {"," symbol}
+
+symbol ->
+    | ["marked"] SYMBOL
 
 block ->
     | IDENTIFIER ":" scope
 
 condition ->
-    | SYMBOL
+    | symbol
     | IDENTIFIER
+    | "marked"
+    | "unmarked"
     | condition "or" condition
 
 scope ->
@@ -18,15 +23,17 @@ scope ->
 statement ->
     | "if" condition scope {"or" condition scope} ["else" scope | NEWLINE statement]
     | [write ","] travel (["," transition] | LINE statement)
+    | "accept"
+    | "reject"
 
 write ->
-    | "write" SYMBOL {SYMBOL} ["backwards"] [NUMBER "times"]
+    | "mark"
+    | "unmark"
+    | "write" symbol {symbol} ["backwards"] [NUMBER "times"]
 
 travel ->
     | "go" direction [NUMBER "times"] ["until" condition]
 
 transition ->
-    | "accept"
-    | "reject"
     | "do" IDENTIFIER
     | NEWLINE statement

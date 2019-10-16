@@ -8,11 +8,8 @@
     #define TAB 4
 %}
 
-IDENTIFIER  [:alpha:]+[:alnum:]*
-NUMBER      [1-9][:digit:]*
-SYMBOL      [:print:]
 
-%x SCOPE COMMENT
+%x SCOPE COMMENT NUMBER
 
 %%
 
@@ -21,28 +18,32 @@ SYMBOL      [:print:]
 <*>"//"[^\n]*                       // discard line comments    
 <*>"/*"         BEGIN (COMMENT);    // starts a multiline comment
 
+"."[1-9][[:digit:]]*        {fprintf(stdout, "number\n");return NUMBER;}
+[[:alpha:]]+[[:alnum:]]+    {fprintf(stdout, "identifier\n");return IDENTIFIER;}
+[[:graph:]]                 {fprintf(stdout, "symbol\n");return SYMBOL;}
+
 <COMMENT>"*/"   BEGIN (INITIAL);    // end multiline comment
 <COMMENT>[^*]                       // skip comment body
 <COMMENT>"*"                        // skip single *
 
-<SCOPE>" "      {spaces++;}         // increase the indent
-<SCOPE>\n       {spaces = 0;}       // reset the indent
-<SCOPE>\t       {spaces += TAB;}    // add a tab to the indent
-<SCOPE>.        {
-                    unput(*yytext);
-                    if (spaces == TAB * indent) BEGIN(INITIAL);
+<SCOPE>" "  {spaces++;}         // increase the indent
+<SCOPE>\n   {spaces = 0;}       // reset the indent
+<SCOPE>\t   {spaces += TAB;}    // add a tab to the indent
+<SCOPE>.    {
+                unput(*yytext);
+                if (spaces == TAB * indent) BEGIN(INITIAL);
 
-                    else if (spaces == TAB * (indent + 1))
-                    {
-                        indent++;
-                        return INDENT;
-                    }
-                    else if (spaces == TAB * (indent - 1))
-                    {
-                        indent--;
-                        return UNINDENT;
-                    }
-                    else yyerror("mismatched indentation");
+                else if (spaces == TAB * (indent + 1))
+                {
+                    indent++;
+                    return INDENT;
                 }
+                else if (spaces == TAB * (indent - 1))
+                {
+                    indent--;
+                    return UNINDENT;
+                }
+                else printf("%s\n","error");// yyerror("mismatched indentation");
+            }
 
 %%

@@ -1,8 +1,8 @@
-if _ 
+if _
     reject
 
 go right until 0
-write O, go right, do first
+mark, go right, do first
 
 first:
     go right until 0 or _
@@ -14,7 +14,7 @@ first:
 cross:
     go right until 0 or _
     if _
-        go left until O, do first
+        go left until marked, do first
         
     go right until 0 or _
     
