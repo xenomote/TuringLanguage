@@ -1,0 +1,32 @@
+program ->
+    | 
+
+group ->
+    | IDENTIFIER "=" SYMBOL {"," SYMBOL}
+
+block ->
+    | IDENTIFIER ":" scope
+
+condition ->
+    | SYMBOL
+    | IDENTIFIER
+    | condition "or" condition
+
+scope ->
+    | INDENT statement UNINDENT
+
+statement ->
+    | "if" condition scope {"or" condition scope} ["else" scope | NEWLINE statement]
+    | [write ","] travel (["," transition] | LINE statement)
+
+write ->
+    | "write" SYMBOL {SYMBOL} ["backwards"] [NUMBER "times"]
+
+travel ->
+    | "go" direction [NUMBER "times"] ["until" condition]
+
+transition ->
+    | "accept"
+    | "reject"
+    | "do" IDENTIFIER
+    | NEWLINE statement

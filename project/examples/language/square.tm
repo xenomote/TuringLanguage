@@ -1,4 +1,4 @@
-if _
+if _ 
     reject
 
 go right until 0
@@ -17,6 +17,7 @@ cross:
         go left until O, do first
         
     go right until 0 or _
+    
     if _
         reject
     else
