@@ -1,5 +1,6 @@
 %{
     #include "parser.tab.h"
+
     extern void yyerror(const char* s);
 
     int indent = 0;

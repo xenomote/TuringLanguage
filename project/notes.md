@@ -18,3 +18,5 @@ whitespace based indentation:
     https://stackoverflow.com/questions/1413204/how-to-use-indentation-as-block-delimiters-with-bison-and-flex
 
 got flex and bison working to parse the grammar
+
+started working on action rules for the parser, created structs for each key program element

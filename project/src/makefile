@@ -1,5 +1,5 @@
-all: lex.yy.c parser.tab.c parser.tab.h
-	gcc lex.yy.c lex.yy.h parser.tab.c -lfl -o compiler
+all: lex.yy.c lex.yy.h parser.tab.c parser.tab.h syntax.c syntax.h
+	gcc lex.yy.c lex.yy.h parser.tab.c parser.tab.h syntax.c syntax.h -lfl -o compiler.out
 
 parser.tab.c parser.tab.h: parser.y
 	bison -d parser.y

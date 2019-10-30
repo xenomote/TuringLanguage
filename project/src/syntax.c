@@ -2,8 +2,17 @@
 
 #include "syntax.h"
 
-Program* program(Group* groups, Statement* statements, Block* blocks) {
-    Program* program = malloc(sizeof(Program));
+list_t* push(void* value, list_t* list) {
+    list_t* node = malloc(sizeof(list_t));
+    
+    node -> value = value;
+    node -> next = list;
+
+    return node;
+}
+
+program_t* program(list_t* groups, statement_t* statements, list_t* blocks) {
+    program_t* program = malloc(sizeof(program_t));
 
     program -> groups = groups;
     program -> statements = statements;
@@ -12,8 +21,8 @@ Program* program(Group* groups, Statement* statements, Block* blocks) {
     return program;
 }
 
-Group* group(char* name, char* symbols, char* marked_symbols) {
-    Group* group = malloc(sizeof(Group));
+group_t* group(char* name, char* symbols, char* marked_symbols) {
+    group_t* group = malloc(sizeof(group_t));
 
     group -> name = name;
     group -> symbols = symbols;
@@ -22,8 +31,8 @@ Group* group(char* name, char* symbols, char* marked_symbols) {
     return group;
 }
 
-Block* block(char* name, Statement* statements) {
-    Block* block = malloc(sizeof(Block));
+block_t* block(char* name, statement_t* statements) {
+    block_t* block = malloc(sizeof(block_t));
 
     block -> name = name;
     block -> statements = statements;
@@ -31,12 +40,12 @@ Block* block(char* name, Statement* statements) {
     return block;
 }
 
-Statement* conditional(Condition* condition, Statement* success, Statement* failure) {
-    Statement* statement = malloc(sizeof(Statement));
-    Conditional* conditional = malloc(sizeof(Conditional));
+statement_t* conditional(condition_t* condition, statement_t* success, statement_t* failure) {
+    statement_t* statement = malloc(sizeof(statement_t));
+    conditional_t* conditional = malloc(sizeof(conditional_t));
 
     statement -> type = CONDITIONAL;
-    statement -> body -> conditional = conditional;
+    statement -> conditional = conditional;
 
     conditional -> condition = condition;
     conditional -> success = success;
@@ -45,12 +54,12 @@ Statement* conditional(Condition* condition, Statement* success, Statement* fail
     return statement;
 }
 
-Statement* operation(Write* write, Travel* travel, Statement* next, Block* transition) {
-    Statement* statement = malloc(sizeof(Statement));
-    Operation* operation = malloc(sizeof(Operation)); 
+statement_t* operation(write_t* write, travel_t* travel, statement_t* next, block_t* transition) {
+    statement_t* statement = malloc(sizeof(statement_t));
+    operation_t* operation = malloc(sizeof(operation_t)); 
 
     statement -> type = OPERATION;
-    statement -> body -> operation = operation;
+    statement -> operation = operation;
 
     operation -> write = write;
     operation -> travel = travel;
