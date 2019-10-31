@@ -3,6 +3,13 @@
     #include <stdbool.h>
     #include <string.h>
     #include "lex.yy.h"
+    #include "syntax.h"
+
+    char n = 0;
+    char buffer[256] = "";
+
+    list_t* groups = NULL;
+    list_t* blocks = NULL;
     
     void yyerror(char*);
     
@@ -18,12 +25,6 @@
 %code requires {
     #include <stddef.h>
     #include "syntax.h"
-
-    char n = 0;
-    char buffer[256] = "";
-
-    list_t* groups = NULL;
-    list_t* blocks = NULL;
 }
 
 %union {
@@ -61,7 +62,7 @@
 %%
 
 program: 
-    groups statement blocks         {return (statement_t*) $2;}
+    groups statement blocks         {$$ = $2;}
     ;
 
 groups: 

@@ -12,12 +12,6 @@ typedef struct list {
     struct list* next;
 } list_t;
 
-typedef struct program {
-    struct list* groups;
-    struct statement* statements;
-    struct list* blocks;
-} program_t;
-
 typedef enum statement_type {
     ACCEPT,
     REJECT,
@@ -43,13 +37,14 @@ typedef enum condition_type {
     MARKED,
     UNMARKED,
     UNMARKED_SYMBOL,
-    MARKED_SYMBOL
+    MARKED_SYMBOL,
+    JOIN
 } condition_type;
 
 typedef struct condition {
     condition_type type;
     union {
-        char* symbols;
+        char symbol;
         struct {
             struct condition* left;
             struct condition* right;

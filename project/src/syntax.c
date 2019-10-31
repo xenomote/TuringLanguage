@@ -22,14 +22,39 @@ void* find(char* name, list_t* list) {
     return NULL;
 }
 
-program_t* program(list_t* groups, statement_t* statements, list_t* blocks) {
-    program_t* program = malloc(sizeof(program_t));
+condition_t* marked() {
+    condition_t* marked = malloc(sizeof(condition_t));
 
-    program -> groups = groups;
-    program -> statements = statements;
-    program -> blocks = blocks;
+    marked -> type = MARKED;
 
-    return program;
+    return marked;
+}
+
+condition_t* unmarked() {
+    condition_t* unmarked = malloc(sizeof(condition_t));
+
+    unmarked -> type = UNMARKED;
+
+    return unmarked;
+}
+
+condition_t* symbol(bool marked, char character) {
+    condition_t* symbol = malloc(sizeof(condition_t));
+
+    symbol -> type = marked ? MARKED_SYMBOL : UNMARKED_SYMBOL;
+    symbol -> symbol = character;
+
+    return symbol;
+}
+
+condition_t* join(condition_t* left, condition_t* right){
+    condition_t* join = malloc(sizeof(condition_t));
+
+    join -> type = JOIN;
+    join -> left = left;
+    join -> right = right;
+
+    return join;
 }
 
 statement_t* accept() {
