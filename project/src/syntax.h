@@ -3,8 +3,8 @@
 
 #include <stdbool.h>
 
-#define LEFT false;
-#define RIGHT true;
+#define LEFT_D false;
+#define RIGHT_D true;
 
 typedef struct list {
     char* name;
@@ -13,10 +13,10 @@ typedef struct list {
 } list_t;
 
 typedef enum statement_type {
-    ACCEPT,
-    REJECT,
-    CONDITIONAL,
-    OPERATION
+    ACCEPT_T,
+    REJECT_T,
+    CONDITIONAL_T,
+    OPERATION_T
 } statement_type;
 
 typedef struct statement {
@@ -34,11 +34,11 @@ typedef struct conditional {
 } conditional_t;
 
 typedef enum condition_type {
-    MARKED,
-    UNMARKED,
-    UNMARKED_SYMBOL,
-    MARKED_SYMBOL,
-    JOIN
+    MARKED_T,
+    UNMARKED_T,
+    UNMARKED_SYMBOL_T,
+    MARKED_SYMBOL_T,
+    JOIN_T
 } condition_type;
 
 typedef struct condition {
@@ -59,9 +59,9 @@ typedef struct operation {
 } operation_t;
 
 typedef enum write_type {
-    WRITE,
-    MARK,
-    UNMARK
+    WRITE_T,
+    MARK_T,
+    UNMARK_T
 } write_type;
 
 typedef struct write {

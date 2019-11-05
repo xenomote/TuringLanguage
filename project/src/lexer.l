@@ -6,7 +6,23 @@
     int indent = 0;
     int spaces = 0;
 
+    void update_location() {
+        yylloc.first_line = yylloc.last_line;
+        yylloc.first_column = yylloc.last_column;
+
+        for(int i = 0; yytext[i] != '\0'; i++) {
+            if(yytext[i] == '\n') {
+                yylloc.last_line++;
+                yylloc.last_column = 0;
+            }
+            else {
+                yylloc.last_column++;
+            }
+        }
+    }
+
     #define TAB 4
+    #define YY_USER_ACTION update_location();
 %}
 
 
@@ -14,18 +30,35 @@
 
 %%
 
-\n              BEGIN (SCOPE);      // checks for the beginning of a scope
+\n              BEGIN (SCOPE);  // checks for the beginning of a scope
 
 <*>"//"[^\n]*                       // discard line comments    
 <*>"/*"         BEGIN (COMMENT);    // starts a multiline comment
 
-"."[1-9][[:digit:]]*        {fprintf(stdout, "number\n");return NUMBER;}
-[[:alpha:]]+[[:alnum:]]+    {fprintf(stdout, "identifier\n");return IDENTIFIER;}
-[[:graph:]]                 {fprintf(stdout, "symbol\n");return SYMBOL;}
+"="                         {printf("equals\n");return EQUALS;}
+":"                         {printf("colon\n");return COLON;}
+","                         {printf("comma\n");return COMMA;}
+"if"                        return IF;
+"or"                        return OR;
+"else"                      return ELSE;
+"accept"                    return ACCEPT;
+"reject"                    return REJECTION;
+"write"                     return WRITE;
+"go"                        return GO;
+"do"                        return DO;
+"mark"                      return MARK;
+"unmark"                    return UNMARK;
+"marked"                    return MARKED;
+"unmarked"                  return UNMARKED;
+"left"                      return LEFT;
+"right"                     return RIGHT;
+"."[1-9][[:digit:]]*        {fprintf(stdout, "number %s\n", yytext);return NUMBER;}
+[[:alpha:]]+[[:alnum:]]+    {fprintf(stdout, "identifier %s\n", yytext);return IDENTIFIER;}
+[[:graph:]]                 {fprintf(stdout, "symbol %s\n", yytext);return SYMBOL;}
 
-<COMMENT>"*/"   BEGIN (INITIAL);    // end multiline comment
-<COMMENT>[^*]                       // skip comment body
-<COMMENT>"*"                        // skip single *
+<COMMENT>"*/"   BEGIN (INITIAL);            // end multiline comment
+<COMMENT>[^*]                               // skip comment body
+<COMMENT>"*"                                // skip single *
 
 <SCOPE>" "  {spaces++;}         // increase the indent
 <SCOPE>\n   {spaces = 0;}       // reset the indent
@@ -44,7 +77,7 @@
                     indent--;
                     return UNINDENT;
                 }
-                else printf("%s\n","error");// yyerror("mismatched indentation");
+                else yyerror("mismatched indentation");
             }
 
 %%
