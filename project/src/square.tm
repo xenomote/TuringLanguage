@@ -1,8 +1,3 @@
-if _
-    reject
-
-go right until 0
-mark, go right, do first
 
 first:
     go right until 0 or _
@@ -22,3 +17,9 @@ cross:
         reject
     else
         write X, go right, do cross
+
+if _
+    reject
+
+go right until 0
+mark, go right, do first

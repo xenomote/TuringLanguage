@@ -30,14 +30,14 @@
 
 %%
 
-\n              BEGIN (SCOPE);  // checks for the beginning of a scope
+\n              {BEGIN (SCOPE); return NEWLINE;}  // checks for the beginning of a scope
 
 <*>"//"[^\n]*                       // discard line comments    
 <*>"/*"         BEGIN (COMMENT);    // starts a multiline comment
 
-"="                         {printf("equals\n");return EQUALS;}
-":"                         {printf("colon\n");return COLON;}
-","                         {printf("comma\n");return COMMA;}
+"="                         return EQUALS;
+":"                         return COLON;
+","                         return COMMA;
 "if"                        return IF;
 "or"                        return OR;
 "else"                      return ELSE;
@@ -52,17 +52,21 @@
 "unmarked"                  return UNMARKED;
 "left"                      return LEFT;
 "right"                     return RIGHT;
-"."[1-9][[:digit:]]*        {fprintf(stdout, "number %s\n", yytext);return NUMBER;}
-[[:alpha:]]+[[:alnum:]]+    {fprintf(stdout, "identifier %s\n", yytext);return IDENTIFIER;}
-[[:graph:]]                 {fprintf(stdout, "symbol %s\n", yytext);return SYMBOL;}
+"until"                     return UNTIL;
+"times"                     return TIMES;
+"backwards"                 return BACKWARDS;
+
+"."[1-9][[:digit:]]*        return NUMBER;
+[[:alpha:]]+[[:alnum:]]+    return IDENTIFIER;
+[[:graph:]]                 return SYMBOL;
 
 <COMMENT>"*/"   BEGIN (INITIAL);            // end multiline comment
 <COMMENT>[^*]                               // skip comment body
 <COMMENT>"*"                                // skip single *
 
-<SCOPE>" "  {spaces++;}         // increase the indent
-<SCOPE>\n   {spaces = 0;}       // reset the indent
-<SCOPE>\t   {spaces += TAB;}    // add a tab to the indent
+<SCOPE>" "  {spaces++;}                     // increase the indent
+<SCOPE>\n   {spaces = 0; return NEWLINE;}   // reset the indent
+<SCOPE>\t   {spaces += TAB;}                // add a tab to the indent
 <SCOPE>.    {
                 unput(*yytext);
                 if (spaces == TAB * indent) BEGIN(INITIAL);

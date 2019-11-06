@@ -45,10 +45,18 @@
 %locations
 %define parse.error verbose
 
-%token INDENT UNINDENT NEWLINE IF OR ELSE ACCEPT REJECTION WRITE GO DO MARK UNMARK MARKED UNMARKED LEFT RIGHT
+%token INDENT UNINDENT NEWLINE
+%token IF OR ELSE
+%token ACCEPT REJECTION
+%token WRITE GO DO
+%token MARK UNMARK MARKED UNMARKED
+%token LEFT RIGHT
+%token UNTIL TIMES BACKWARDS
+
 %token <identifier> IDENTIFIER
 %token <symbol>     SYMBOL
 %token <number>     NUMBER
+
 %token EQUALS       "="
 %token COMMA        ","
 %token COLON        ":"
@@ -68,24 +76,23 @@
 
 %%
 
-program: 
-    groups statement blocks         {program = $2;}
+program:
+    groups blocks statement         {program = $3;}
     ;
 
 groups: 
-    %empty                          {}
-    | groups group                  {}
+    group                           {}
+    | groups NEWLINE group          {}
     ;
+
+blocks: 
+    block                           {}
+    | blocks NEWLINE block          {}
+    ; 
 
 group: 
     IDENTIFIER "=" symbols          {groups = push($1, $3, groups);}
     ;
-
-blocks: 
-    %empty                          {}
-    | blocks block                  {}
-    ; 
-
 
 block: 
     IDENTIFIER ":" scope            {blocks = push($1, $3, blocks);}
@@ -119,10 +126,10 @@ else:
     ;
 
 write: 
-    %empty                                  {$$ = NULL;}
-    | MARK                                  {$$ = mark();}
-    | UNMARK                                {$$ = unmark();}
-    | WRITE string reversal repetition      {$$ = writes(strdup(buffer), $3, $4);}
+    %empty                                      {$$ = NULL;}
+    | MARK COMMA                                {$$ = mark();}
+    | UNMARK COMMA                              {$$ = unmark();}
+    | WRITE string reversal repetition COMMA    {$$ = writes(strdup(buffer), $3, $4);}
     ;
 
 travel: 
@@ -130,8 +137,8 @@ travel:
     ;
 
 transition: 
-    DO IDENTIFIER                   {
-                                        statement_t* block = find($2, blocks);
+    COMMA DO IDENTIFIER             {
+                                        statement_t* block = find($3, blocks);
                                         
                                         if (block != NULL)
                                             $$ = block;
@@ -160,38 +167,38 @@ string:
 
 reversal: 
     %empty                          {$$ = RIGHT_D;}
-    | "backwards"                   {$$ = LEFT_D;}
+    | BACKWARDS                     {$$ = LEFT_D;}
     ;
 
 repetition: 
     %empty                          {$$ = 1;}
-    |  NUMBER "times"               {$$ = $1;}
+    |  NUMBER TIMES                 {$$ = $1;}
     ;
 
 until: 
     %empty                          {$$ = NULL;}
-    | "until" condition             {$$ = $2;}
+    | UNTIL condition               {$$ = $2;}
     ;
 
 condition:
     symbol                          {$$ = $1;}
+    | MARKED                        {$$ = marked();}
+    | UNMARKED                      {$$ = unmarked();}
+    | condition OR symbol           {$$ = join($1, $3);}
+    | condition OR IDENTIFIER       {
+                                        condition_t* group = find($3, groups);
+
+                                        if (group != NULL)
+                                            $$ = join($1, group);
+
+                                        else
+                                            yyerror("couldnt find group");
+                                    }
     | IDENTIFIER                    {
                                         condition_t* group = find($1, groups);
 
                                         if (group != NULL)
                                             $$ = group;
-
-                                        else
-                                            yyerror("couldnt find group");
-                                    }
-    | "marked"                      {$$ = marked();}
-    | "unmarked"                    {$$ = unmarked();}
-    | condition "or" symbol         {$$ = join($1, $3);}
-    | condition "or" IDENTIFIER     {
-                                        condition_t* group = find($3, groups);
-
-                                        if (group != NULL)
-                                            $$ = join($1, group);
 
                                         else
                                             yyerror("couldnt find group");
