@@ -2,6 +2,7 @@
 #define SYNTAX_H
 
 #include <stdbool.h>
+#include <stddef.h>
 
 #define LEFT_D false;
 #define RIGHT_D true;
@@ -55,7 +56,7 @@ typedef struct condition {
 typedef struct operation {
     struct write* write;
     struct travel* travel;
-    struct statement* next;
+    struct statement** next;
 } operation_t;
 
 typedef enum write_type {
@@ -87,8 +88,9 @@ condition_t* join(condition_t* left, condition_t* right);
 
 statement_t* accept();
 statement_t* reject();
+
 statement_t* conditional(condition_t* condition, statement_t* success, statement_t* failure);
-statement_t* operation(write_t* write, travel_t* travel, statement_t* next);
+statement_t* operation(write_t* write, travel_t* travel, statement_t** next);
 
 write_t* mark();
 write_t* unmark();

@@ -9,6 +9,7 @@
     char buffer[256] = "";
 
     statement_t* program = NULL;
+
     list_t* groups = NULL;
     list_t* blocks = NULL;
     
@@ -37,6 +38,7 @@
 
     list_t* list;
     statement_t* statement;
+    statement_t** reference;
     condition_t* condition;
     write_t* write;
     travel_t* travel;
@@ -64,10 +66,11 @@
 %type <list> groups blocks
 %type <group> group
 %type <block> block
-%type <statement> program statement scope transition else
+%type <statement> program statement scope else
 %type <condition> condition until symbol symbols
 %type <write> write
 %type <travel> travel
+%type <reference> transition
 %type <number> repetition
 %type <direction> direction reversal
 %type <string> string
@@ -77,7 +80,20 @@
 %%
 
 program:
-    groups blocks statement         {program = $3;}
+    groups blocks statement         {
+                                        list_t* node = blocks;
+                                        
+                                        while (node != NULL) {
+                                            statement_t** reference = node -> value;
+                                            
+                                            if (reference == NULL || *reference == NULL)
+                                                yyerror("undefined block");
+
+                                            node = node -> next;
+                                        }
+
+                                        program = $3;
+                                    }
     ;
 
 groups: 
@@ -95,7 +111,16 @@ group:
     ;
 
 block: 
-    IDENTIFIER ":" scope            {blocks = push($1, $3, blocks);}
+    IDENTIFIER ":" scope            {
+                                        statement_t** reference = find($1, blocks);
+
+                                        if (reference == NULL) {
+                                            reference = malloc(sizeof(statement_t*));
+                                            blocks = push($1, reference, blocks);
+                                        }
+
+                                        *reference = $3;
+                                    }
     ;
 
 symbols: 
@@ -105,7 +130,7 @@ symbols:
 
 symbol: 
     SYMBOL                          {$$ = symbol(false, $1);}
-    | MARKED SYMBOL               {$$ = symbol(true, $2);}
+    | MARKED SYMBOL                 {$$ = symbol(true, $2);}
     ;
 
 scope: 
@@ -137,15 +162,18 @@ travel:
     ;
 
 transition: 
-    COMMA DO IDENTIFIER             {
-                                        statement_t* block = find($3, blocks);
-                                        
-                                        if (block != NULL)
-                                            $$ = block;
-                                        else
-                                            yyerror("couldnt find block");
+    NEWLINE statement               {$$ = &$2;}
+    | COMMA DO IDENTIFIER           {
+                                        statement_t** reference = find($3, blocks);
+
+                                        if (reference == NULL) {
+                                            reference = malloc(sizeof(statement_t*));
+                                            *reference = NULL;
+                                            blocks = push($3, reference, blocks);
+                                        }
+
+                                        $$ = reference;
                                     }
-    | NEWLINE statement             {$$ = $2;}
     ;
 
 direction: 

@@ -2,7 +2,6 @@
 
 #include "syntax.h"
 
-
 list_t* push(char* name, void* value, list_t* list) {
     list_t* node = malloc(sizeof(list_t));
     
@@ -87,7 +86,7 @@ statement_t* conditional(condition_t* condition, statement_t* success, statement
     return statement;
 }
 
-statement_t* operation(write_t* write, travel_t* travel, statement_t* next) {
+statement_t* operation(write_t* write, travel_t* travel, statement_t** next) {
     statement_t* statement = malloc(sizeof(statement_t));
     operation_t* operation = malloc(sizeof(operation_t)); 
 

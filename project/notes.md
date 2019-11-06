@@ -22,3 +22,5 @@ got flex and bison working to parse the grammar
 started working on action rules for the parser, created structs for each key program element
 
 filled out different token types, added location tracking and error messages
+
+worked on resolving shift reduce conflicts in grammar and forward declarations of block names

@@ -1,4 +1,3 @@
-
 first:
     go right until 0 or _
     if _

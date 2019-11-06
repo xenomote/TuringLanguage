@@ -1,16 +1,13 @@
-State 2 conflicts: 1 shift/reduce
-
-
 Grammar
 
     0 $accept: program $end
 
     1 program: groups blocks statement
 
-    2 groups: %empty
+    2 groups: group
     3       | groups NEWLINE group
 
-    4 blocks: %empty
+    4 blocks: block
     5       | blocks NEWLINE block
 
     6 group: IDENTIFIER "=" symbols
@@ -41,8 +38,8 @@ Grammar
 
    24 travel: GO direction repetition until
 
-   25 transition: "," DO IDENTIFIER
-   26           | NEWLINE statement
+   25 transition: NEWLINE statement
+   26           | "," DO IDENTIFIER
 
    27 direction: LEFT
    28          | RIGHT
@@ -73,7 +70,7 @@ $end (0) 0
 error (256)
 INDENT (258) 12
 UNINDENT (259) 12
-NEWLINE (260) 3 5 26
+NEWLINE (260) 3 5 25
 IF (261) 14
 OR (262) 17 40 41
 ELSE (263) 18
@@ -81,7 +78,7 @@ ACCEPT (264) 15
 REJECTION (265) 16
 WRITE (266) 23
 GO (267) 24
-DO (268) 25
+DO (268) 26
 MARK (269) 21
 UNMARK (270) 22
 MARKED (271) 11 38
@@ -91,11 +88,11 @@ RIGHT (274) 28
 UNTIL (275) 36
 TIMES (276) 34
 BACKWARDS (277) 32
-IDENTIFIER (278) 6 7 25 41 42
+IDENTIFIER (278) 6 7 26 41 42
 SYMBOL (279) 10 11 29 30
 NUMBER (280) 34
 "=" (281) 6
-"," (282) 8 21 22 23 25
+"," (282) 8 21 22 23 26
 ":" (283) 7
 
 
@@ -110,9 +107,9 @@ groups (31)
 blocks (32)
     on left: 4 5, on right: 1 5
 group (33)
-    on left: 6, on right: 3
+    on left: 6, on right: 2 3
 block (34)
-    on left: 7, on right: 5
+    on left: 7, on right: 4 5
 symbols (35)
     on left: 8 9, on right: 6 8
 symbol (36)
@@ -120,7 +117,7 @@ symbol (36)
 scope (37)
     on left: 12, on right: 7 14 17 18
 statement (38)
-    on left: 13 14 15 16, on right: 1 12 19 26
+    on left: 13 14 15 16, on right: 1 12 19 25
 else (39)
     on left: 17 18 19, on right: 14 17
 write (40)
@@ -147,55 +144,93 @@ State 0
 
     0 $accept: . program $end
     1 program: . groups blocks statement
-    2 groups: . %empty
+    2 groups: . group
     3       | . groups NEWLINE group
+    6 group: . IDENTIFIER "=" symbols
 
-    $default  reduce using rule 2 (groups)
+    IDENTIFIER  shift, and go to state 1
 
-    program  go to state 1
-    groups   go to state 2
+    program  go to state 2
+    groups   go to state 3
+    group    go to state 4
 
 
 State 1
 
-    0 $accept: program . $end
+    6 group: IDENTIFIER . "=" symbols
 
-    $end  shift, and go to state 3
+    "="  shift, and go to state 5
 
 
 State 2
 
-    1 program: groups . blocks statement
-    3 groups: groups . NEWLINE group
-    4 blocks: . %empty  [NEWLINE, IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
-    5       | . blocks NEWLINE block
+    0 $accept: program . $end
 
-    NEWLINE  shift, and go to state 4
-
-    NEWLINE   [reduce using rule 4 (blocks)]
-    $default  reduce using rule 4 (blocks)
-
-    blocks  go to state 5
+    $end  shift, and go to state 6
 
 
 State 3
+
+    1 program: groups . blocks statement
+    3 groups: groups . NEWLINE group
+    4 blocks: . block
+    5       | . blocks NEWLINE block
+    7 block: . IDENTIFIER ":" scope
+
+    NEWLINE     shift, and go to state 7
+    IDENTIFIER  shift, and go to state 8
+
+    blocks  go to state 9
+    block   go to state 10
+
+
+State 4
+
+    2 groups: group .
+
+    $default  reduce using rule 2 (groups)
+
+
+State 5
+
+    6 group: IDENTIFIER "=" . symbols
+    8 symbols: . symbols "," symbol
+    9        | . symbol
+   10 symbol: . SYMBOL
+   11       | . MARKED SYMBOL
+
+    MARKED  shift, and go to state 11
+    SYMBOL  shift, and go to state 12
+
+    symbols  go to state 13
+    symbol   go to state 14
+
+
+State 6
 
     0 $accept: program $end .
 
     $default  accept
 
 
-State 4
+State 7
 
     3 groups: groups NEWLINE . group
     6 group: . IDENTIFIER "=" symbols
 
-    IDENTIFIER  shift, and go to state 6
+    IDENTIFIER  shift, and go to state 1
 
-    group  go to state 7
+    group  go to state 15
 
 
-State 5
+State 8
+
+    7 block: IDENTIFIER . ":" scope
+
+    ":"  shift, and go to state 16
+
+
+State 9
 
     1 program: groups blocks . statement
     5 blocks: blocks . NEWLINE block
@@ -208,45 +243,86 @@ State 5
    22      | . UNMARK ","
    23      | . WRITE string reversal repetition ","
 
-    NEWLINE    shift, and go to state 8
-    IF         shift, and go to state 9
-    ACCEPT     shift, and go to state 10
-    REJECTION  shift, and go to state 11
-    WRITE      shift, and go to state 12
-    MARK       shift, and go to state 13
-    UNMARK     shift, and go to state 14
+    NEWLINE    shift, and go to state 17
+    IF         shift, and go to state 18
+    ACCEPT     shift, and go to state 19
+    REJECTION  shift, and go to state 20
+    WRITE      shift, and go to state 21
+    MARK       shift, and go to state 22
+    UNMARK     shift, and go to state 23
 
     $default  reduce using rule 20 (write)
 
-    statement  go to state 15
-    write      go to state 16
+    statement  go to state 24
+    write      go to state 25
 
 
-State 6
+State 10
 
-    6 group: IDENTIFIER . "=" symbols
+    4 blocks: block .
 
-    "="  shift, and go to state 17
+    $default  reduce using rule 4 (blocks)
 
 
-State 7
+State 11
+
+   11 symbol: MARKED . SYMBOL
+
+    SYMBOL  shift, and go to state 26
+
+
+State 12
+
+   10 symbol: SYMBOL .
+
+    $default  reduce using rule 10 (symbol)
+
+
+State 13
+
+    6 group: IDENTIFIER "=" symbols .  [NEWLINE, IDENTIFIER]
+    8 symbols: symbols . "," symbol
+
+    ","  shift, and go to state 27
+
+    $default  reduce using rule 6 (group)
+
+
+State 14
+
+    9 symbols: symbol .
+
+    $default  reduce using rule 9 (symbols)
+
+
+State 15
 
     3 groups: groups NEWLINE group .
 
     $default  reduce using rule 3 (groups)
 
 
-State 8
+State 16
+
+    7 block: IDENTIFIER ":" . scope
+   12 scope: . INDENT statement UNINDENT
+
+    INDENT  shift, and go to state 28
+
+    scope  go to state 29
+
+
+State 17
 
     5 blocks: blocks NEWLINE . block
     7 block: . IDENTIFIER ":" scope
 
-    IDENTIFIER  shift, and go to state 18
+    IDENTIFIER  shift, and go to state 8
 
-    block  go to state 19
+    block  go to state 30
 
 
-State 9
+State 18
 
    10 symbol: . SYMBOL
    11       | . MARKED SYMBOL
@@ -258,253 +334,91 @@ State 9
    41          | . condition OR IDENTIFIER
    42          | . IDENTIFIER
 
-    MARKED      shift, and go to state 20
-    UNMARKED    shift, and go to state 21
-    IDENTIFIER  shift, and go to state 22
-    SYMBOL      shift, and go to state 23
+    MARKED      shift, and go to state 31
+    UNMARKED    shift, and go to state 32
+    IDENTIFIER  shift, and go to state 33
+    SYMBOL      shift, and go to state 12
 
-    symbol     go to state 24
-    condition  go to state 25
+    symbol     go to state 34
+    condition  go to state 35
 
 
-State 10
+State 19
 
    15 statement: ACCEPT .
 
     $default  reduce using rule 15 (statement)
 
 
-State 11
+State 20
 
    16 statement: REJECTION .
 
     $default  reduce using rule 16 (statement)
 
 
-State 12
+State 21
 
    23 write: WRITE . string reversal repetition ","
    29 string: . string SYMBOL
    30       | . SYMBOL
 
-    SYMBOL  shift, and go to state 26
+    SYMBOL  shift, and go to state 36
 
-    string  go to state 27
+    string  go to state 37
 
 
-State 13
+State 22
 
    21 write: MARK . ","
 
-    ","  shift, and go to state 28
+    ","  shift, and go to state 38
 
 
-State 14
+State 23
 
    22 write: UNMARK . ","
 
-    ","  shift, and go to state 29
+    ","  shift, and go to state 39
 
 
-State 15
+State 24
 
     1 program: groups blocks statement .
 
     $default  reduce using rule 1 (program)
 
 
-State 16
+State 25
 
    13 statement: write . travel transition
    24 travel: . GO direction repetition until
 
-    GO  shift, and go to state 30
+    GO  shift, and go to state 40
 
-    travel  go to state 31
-
-
-State 17
-
-    6 group: IDENTIFIER "=" . symbols
-    8 symbols: . symbols "," symbol
-    9        | . symbol
-   10 symbol: . SYMBOL
-   11       | . MARKED SYMBOL
-
-    MARKED  shift, and go to state 32
-    SYMBOL  shift, and go to state 23
-
-    symbols  go to state 33
-    symbol   go to state 34
-
-
-State 18
-
-    7 block: IDENTIFIER . ":" scope
-
-    ":"  shift, and go to state 35
-
-
-State 19
-
-    5 blocks: blocks NEWLINE block .
-
-    $default  reduce using rule 5 (blocks)
-
-
-State 20
-
-   11 symbol: MARKED . SYMBOL
-   38 condition: MARKED .  [INDENT, NEWLINE, OR, ","]
-
-    SYMBOL  shift, and go to state 36
-
-    $default  reduce using rule 38 (condition)
-
-
-State 21
-
-   39 condition: UNMARKED .
-
-    $default  reduce using rule 39 (condition)
-
-
-State 22
-
-   42 condition: IDENTIFIER .
-
-    $default  reduce using rule 42 (condition)
-
-
-State 23
-
-   10 symbol: SYMBOL .
-
-    $default  reduce using rule 10 (symbol)
-
-
-State 24
-
-   37 condition: symbol .
-
-    $default  reduce using rule 37 (condition)
-
-
-State 25
-
-   12 scope: . INDENT statement UNINDENT
-   14 statement: IF condition . scope else
-   40 condition: condition . OR symbol
-   41          | condition . OR IDENTIFIER
-
-    INDENT  shift, and go to state 37
-    OR      shift, and go to state 38
-
-    scope  go to state 39
+    travel  go to state 41
 
 
 State 26
-
-   30 string: SYMBOL .
-
-    $default  reduce using rule 30 (string)
-
-
-State 27
-
-   23 write: WRITE string . reversal repetition ","
-   29 string: string . SYMBOL
-   31 reversal: . %empty  [NUMBER, ","]
-   32         | . BACKWARDS
-
-    BACKWARDS  shift, and go to state 40
-    SYMBOL     shift, and go to state 41
-
-    $default  reduce using rule 31 (reversal)
-
-    reversal  go to state 42
-
-
-State 28
-
-   21 write: MARK "," .
-
-    $default  reduce using rule 21 (write)
-
-
-State 29
-
-   22 write: UNMARK "," .
-
-    $default  reduce using rule 22 (write)
-
-
-State 30
-
-   24 travel: GO . direction repetition until
-   27 direction: . LEFT
-   28          | . RIGHT
-
-    LEFT   shift, and go to state 43
-    RIGHT  shift, and go to state 44
-
-    direction  go to state 45
-
-
-State 31
-
-   13 statement: write travel . transition
-   25 transition: . "," DO IDENTIFIER
-   26           | . NEWLINE statement
-
-    NEWLINE  shift, and go to state 46
-    ","      shift, and go to state 47
-
-    transition  go to state 48
-
-
-State 32
-
-   11 symbol: MARKED . SYMBOL
-
-    SYMBOL  shift, and go to state 36
-
-
-State 33
-
-    6 group: IDENTIFIER "=" symbols .  [NEWLINE, IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
-    8 symbols: symbols . "," symbol
-
-    ","  shift, and go to state 49
-
-    $default  reduce using rule 6 (group)
-
-
-State 34
-
-    9 symbols: symbol .
-
-    $default  reduce using rule 9 (symbols)
-
-
-State 35
-
-    7 block: IDENTIFIER ":" . scope
-   12 scope: . INDENT statement UNINDENT
-
-    INDENT  shift, and go to state 37
-
-    scope  go to state 50
-
-
-State 36
 
    11 symbol: MARKED SYMBOL .
 
     $default  reduce using rule 11 (symbol)
 
 
-State 37
+State 27
+
+    8 symbols: symbols "," . symbol
+   10 symbol: . SYMBOL
+   11       | . MARKED SYMBOL
+
+    MARKED  shift, and go to state 11
+    SYMBOL  shift, and go to state 12
+
+    symbol  go to state 42
+
+
+State 28
 
    12 scope: INDENT . statement UNINDENT
    13 statement: . write travel transition
@@ -516,34 +430,166 @@ State 37
    22      | . UNMARK ","
    23      | . WRITE string reversal repetition ","
 
-    IF         shift, and go to state 9
-    ACCEPT     shift, and go to state 10
-    REJECTION  shift, and go to state 11
-    WRITE      shift, and go to state 12
-    MARK       shift, and go to state 13
-    UNMARK     shift, and go to state 14
+    IF         shift, and go to state 18
+    ACCEPT     shift, and go to state 19
+    REJECTION  shift, and go to state 20
+    WRITE      shift, and go to state 21
+    MARK       shift, and go to state 22
+    UNMARK     shift, and go to state 23
 
     $default  reduce using rule 20 (write)
 
-    statement  go to state 51
-    write      go to state 16
+    statement  go to state 43
+    write      go to state 25
+
+
+State 29
+
+    7 block: IDENTIFIER ":" scope .
+
+    $default  reduce using rule 7 (block)
+
+
+State 30
+
+    5 blocks: blocks NEWLINE block .
+
+    $default  reduce using rule 5 (blocks)
+
+
+State 31
+
+   11 symbol: MARKED . SYMBOL
+   38 condition: MARKED .  [INDENT, NEWLINE, OR, ","]
+
+    SYMBOL  shift, and go to state 26
+
+    $default  reduce using rule 38 (condition)
+
+
+State 32
+
+   39 condition: UNMARKED .
+
+    $default  reduce using rule 39 (condition)
+
+
+State 33
+
+   42 condition: IDENTIFIER .
+
+    $default  reduce using rule 42 (condition)
+
+
+State 34
+
+   37 condition: symbol .
+
+    $default  reduce using rule 37 (condition)
+
+
+State 35
+
+   12 scope: . INDENT statement UNINDENT
+   14 statement: IF condition . scope else
+   40 condition: condition . OR symbol
+   41          | condition . OR IDENTIFIER
+
+    INDENT  shift, and go to state 28
+    OR      shift, and go to state 44
+
+    scope  go to state 45
+
+
+State 36
+
+   30 string: SYMBOL .
+
+    $default  reduce using rule 30 (string)
+
+
+State 37
+
+   23 write: WRITE string . reversal repetition ","
+   29 string: string . SYMBOL
+   31 reversal: . %empty  [NUMBER, ","]
+   32         | . BACKWARDS
+
+    BACKWARDS  shift, and go to state 46
+    SYMBOL     shift, and go to state 47
+
+    $default  reduce using rule 31 (reversal)
+
+    reversal  go to state 48
 
 
 State 38
+
+   21 write: MARK "," .
+
+    $default  reduce using rule 21 (write)
+
+
+State 39
+
+   22 write: UNMARK "," .
+
+    $default  reduce using rule 22 (write)
+
+
+State 40
+
+   24 travel: GO . direction repetition until
+   27 direction: . LEFT
+   28          | . RIGHT
+
+    LEFT   shift, and go to state 49
+    RIGHT  shift, and go to state 50
+
+    direction  go to state 51
+
+
+State 41
+
+   13 statement: write travel . transition
+   25 transition: . NEWLINE statement
+   26           | . "," DO IDENTIFIER
+
+    NEWLINE  shift, and go to state 52
+    ","      shift, and go to state 53
+
+    transition  go to state 54
+
+
+State 42
+
+    8 symbols: symbols "," symbol .
+
+    $default  reduce using rule 8 (symbols)
+
+
+State 43
+
+   12 scope: INDENT statement . UNINDENT
+
+    UNINDENT  shift, and go to state 55
+
+
+State 44
 
    10 symbol: . SYMBOL
    11       | . MARKED SYMBOL
    40 condition: condition OR . symbol
    41          | condition OR . IDENTIFIER
 
-    MARKED      shift, and go to state 32
-    IDENTIFIER  shift, and go to state 52
-    SYMBOL      shift, and go to state 23
+    MARKED      shift, and go to state 11
+    IDENTIFIER  shift, and go to state 56
+    SYMBOL      shift, and go to state 12
 
-    symbol  go to state 53
+    symbol  go to state 57
 
 
-State 39
+State 45
 
    13 statement: . write travel transition
    14          | . IF condition scope else
@@ -558,77 +604,77 @@ State 39
    22      | . UNMARK ","
    23      | . WRITE string reversal repetition ","
 
-    IF         shift, and go to state 9
-    OR         shift, and go to state 54
-    ELSE       shift, and go to state 55
-    ACCEPT     shift, and go to state 10
-    REJECTION  shift, and go to state 11
-    WRITE      shift, and go to state 12
-    MARK       shift, and go to state 13
-    UNMARK     shift, and go to state 14
+    IF         shift, and go to state 18
+    OR         shift, and go to state 58
+    ELSE       shift, and go to state 59
+    ACCEPT     shift, and go to state 19
+    REJECTION  shift, and go to state 20
+    WRITE      shift, and go to state 21
+    MARK       shift, and go to state 22
+    UNMARK     shift, and go to state 23
 
     $default  reduce using rule 20 (write)
 
-    statement  go to state 56
-    else       go to state 57
-    write      go to state 16
+    statement  go to state 60
+    else       go to state 61
+    write      go to state 25
 
 
-State 40
+State 46
 
    32 reversal: BACKWARDS .
 
     $default  reduce using rule 32 (reversal)
 
 
-State 41
+State 47
 
    29 string: string SYMBOL .
 
     $default  reduce using rule 29 (string)
 
 
-State 42
+State 48
 
    23 write: WRITE string reversal . repetition ","
    33 repetition: . %empty  [","]
    34           | . NUMBER TIMES
 
-    NUMBER  shift, and go to state 58
+    NUMBER  shift, and go to state 62
 
     $default  reduce using rule 33 (repetition)
 
-    repetition  go to state 59
+    repetition  go to state 63
 
 
-State 43
+State 49
 
    27 direction: LEFT .
 
     $default  reduce using rule 27 (direction)
 
 
-State 44
+State 50
 
    28 direction: RIGHT .
 
     $default  reduce using rule 28 (direction)
 
 
-State 45
+State 51
 
    24 travel: GO direction . repetition until
    33 repetition: . %empty  [NEWLINE, UNTIL, ","]
    34           | . NUMBER TIMES
 
-    NUMBER  shift, and go to state 58
+    NUMBER  shift, and go to state 62
 
     $default  reduce using rule 33 (repetition)
 
-    repetition  go to state 60
+    repetition  go to state 64
 
 
-State 46
+State 52
 
    13 statement: . write travel transition
    14          | . IF condition scope else
@@ -638,76 +684,57 @@ State 46
    21      | . MARK ","
    22      | . UNMARK ","
    23      | . WRITE string reversal repetition ","
-   26 transition: NEWLINE . statement
+   25 transition: NEWLINE . statement
 
-    IF         shift, and go to state 9
-    ACCEPT     shift, and go to state 10
-    REJECTION  shift, and go to state 11
-    WRITE      shift, and go to state 12
-    MARK       shift, and go to state 13
-    UNMARK     shift, and go to state 14
+    IF         shift, and go to state 18
+    ACCEPT     shift, and go to state 19
+    REJECTION  shift, and go to state 20
+    WRITE      shift, and go to state 21
+    MARK       shift, and go to state 22
+    UNMARK     shift, and go to state 23
 
     $default  reduce using rule 20 (write)
 
-    statement  go to state 61
-    write      go to state 16
+    statement  go to state 65
+    write      go to state 25
 
 
-State 47
+State 53
 
-   25 transition: "," . DO IDENTIFIER
+   26 transition: "," . DO IDENTIFIER
 
-    DO  shift, and go to state 62
+    DO  shift, and go to state 66
 
 
-State 48
+State 54
 
    13 statement: write travel transition .
 
     $default  reduce using rule 13 (statement)
 
 
-State 49
+State 55
 
-    8 symbols: symbols "," . symbol
-   10 symbol: . SYMBOL
-   11       | . MARKED SYMBOL
+   12 scope: INDENT statement UNINDENT .
 
-    MARKED  shift, and go to state 32
-    SYMBOL  shift, and go to state 23
-
-    symbol  go to state 63
+    $default  reduce using rule 12 (scope)
 
 
-State 50
-
-    7 block: IDENTIFIER ":" scope .
-
-    $default  reduce using rule 7 (block)
-
-
-State 51
-
-   12 scope: INDENT statement . UNINDENT
-
-    UNINDENT  shift, and go to state 64
-
-
-State 52
+State 56
 
    41 condition: condition OR IDENTIFIER .
 
     $default  reduce using rule 41 (condition)
 
 
-State 53
+State 57
 
    40 condition: condition OR symbol .
 
     $default  reduce using rule 40 (condition)
 
 
-State 54
+State 58
 
    10 symbol: . SYMBOL
    11       | . MARKED SYMBOL
@@ -719,129 +746,115 @@ State 54
    41          | . condition OR IDENTIFIER
    42          | . IDENTIFIER
 
-    MARKED      shift, and go to state 20
-    UNMARKED    shift, and go to state 21
-    IDENTIFIER  shift, and go to state 22
-    SYMBOL      shift, and go to state 23
+    MARKED      shift, and go to state 31
+    UNMARKED    shift, and go to state 32
+    IDENTIFIER  shift, and go to state 33
+    SYMBOL      shift, and go to state 12
 
-    symbol     go to state 24
-    condition  go to state 65
+    symbol     go to state 34
+    condition  go to state 67
 
 
-State 55
+State 59
 
    12 scope: . INDENT statement UNINDENT
    18 else: ELSE . scope
 
-    INDENT  shift, and go to state 37
+    INDENT  shift, and go to state 28
 
-    scope  go to state 66
+    scope  go to state 68
 
 
-State 56
+State 60
 
    19 else: statement .
 
     $default  reduce using rule 19 (else)
 
 
-State 57
+State 61
 
    14 statement: IF condition scope else .
 
     $default  reduce using rule 14 (statement)
 
 
-State 58
+State 62
 
    34 repetition: NUMBER . TIMES
 
-    TIMES  shift, and go to state 67
+    TIMES  shift, and go to state 69
 
 
-State 59
+State 63
 
    23 write: WRITE string reversal repetition . ","
 
-    ","  shift, and go to state 68
+    ","  shift, and go to state 70
 
 
-State 60
+State 64
 
    24 travel: GO direction repetition . until
    35 until: . %empty  [NEWLINE, ","]
    36      | . UNTIL condition
 
-    UNTIL  shift, and go to state 69
+    UNTIL  shift, and go to state 71
 
     $default  reduce using rule 35 (until)
 
-    until  go to state 70
-
-
-State 61
-
-   26 transition: NEWLINE statement .
-
-    $default  reduce using rule 26 (transition)
-
-
-State 62
-
-   25 transition: "," DO . IDENTIFIER
-
-    IDENTIFIER  shift, and go to state 71
-
-
-State 63
-
-    8 symbols: symbols "," symbol .
-
-    $default  reduce using rule 8 (symbols)
-
-
-State 64
-
-   12 scope: INDENT statement UNINDENT .
-
-    $default  reduce using rule 12 (scope)
+    until  go to state 72
 
 
 State 65
+
+   25 transition: NEWLINE statement .
+
+    $default  reduce using rule 25 (transition)
+
+
+State 66
+
+   26 transition: "," DO . IDENTIFIER
+
+    IDENTIFIER  shift, and go to state 73
+
+
+State 67
 
    12 scope: . INDENT statement UNINDENT
    17 else: OR condition . scope else
    40 condition: condition . OR symbol
    41          | condition . OR IDENTIFIER
 
-    INDENT  shift, and go to state 37
-    OR      shift, and go to state 38
+    INDENT  shift, and go to state 28
+    OR      shift, and go to state 44
 
-    scope  go to state 72
+    scope  go to state 74
 
 
-State 66
+State 68
 
    18 else: ELSE scope .
 
     $default  reduce using rule 18 (else)
 
 
-State 67
+State 69
 
    34 repetition: NUMBER TIMES .
 
     $default  reduce using rule 34 (repetition)
 
 
-State 68
+State 70
 
    23 write: WRITE string reversal repetition "," .
 
     $default  reduce using rule 23 (write)
 
 
-State 69
+State 71
 
    10 symbol: . SYMBOL
    11       | . MARKED SYMBOL
@@ -853,30 +866,30 @@ State 69
    41          | . condition OR IDENTIFIER
    42          | . IDENTIFIER
 
-    MARKED      shift, and go to state 20
-    UNMARKED    shift, and go to state 21
-    IDENTIFIER  shift, and go to state 22
-    SYMBOL      shift, and go to state 23
+    MARKED      shift, and go to state 31
+    UNMARKED    shift, and go to state 32
+    IDENTIFIER  shift, and go to state 33
+    SYMBOL      shift, and go to state 12
 
-    symbol     go to state 24
-    condition  go to state 73
+    symbol     go to state 34
+    condition  go to state 75
 
 
-State 70
+State 72
 
    24 travel: GO direction repetition until .
 
     $default  reduce using rule 24 (travel)
 
 
-State 71
+State 73
 
-   25 transition: "," DO IDENTIFIER .
+   26 transition: "," DO IDENTIFIER .
 
-    $default  reduce using rule 25 (transition)
+    $default  reduce using rule 26 (transition)
 
 
-State 72
+State 74
 
    13 statement: . write travel transition
    14          | . IF condition scope else
@@ -891,34 +904,34 @@ State 72
    22      | . UNMARK ","
    23      | . WRITE string reversal repetition ","
 
-    IF         shift, and go to state 9
-    OR         shift, and go to state 54
-    ELSE       shift, and go to state 55
-    ACCEPT     shift, and go to state 10
-    REJECTION  shift, and go to state 11
-    WRITE      shift, and go to state 12
-    MARK       shift, and go to state 13
-    UNMARK     shift, and go to state 14
+    IF         shift, and go to state 18
+    OR         shift, and go to state 58
+    ELSE       shift, and go to state 59
+    ACCEPT     shift, and go to state 19
+    REJECTION  shift, and go to state 20
+    WRITE      shift, and go to state 21
+    MARK       shift, and go to state 22
+    UNMARK     shift, and go to state 23
 
     $default  reduce using rule 20 (write)
 
-    statement  go to state 56
-    else       go to state 74
-    write      go to state 16
+    statement  go to state 60
+    else       go to state 76
+    write      go to state 25
 
 
-State 73
+State 75
 
    36 until: UNTIL condition .  [NEWLINE, ","]
    40 condition: condition . OR symbol
    41          | condition . OR IDENTIFIER
 
-    OR  shift, and go to state 38
+    OR  shift, and go to state 44
 
     $default  reduce using rule 36 (until)
 
 
-State 74
+State 76
 
    17 else: OR condition scope else .
 
