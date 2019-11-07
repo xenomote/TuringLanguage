@@ -5,6 +5,7 @@
 
     int indent = 0;
     int spaces = 0;
+    int lines = 0;
 
     void update_location() {
         yylloc.first_line = yylloc.last_line;
@@ -21,6 +22,8 @@
         }
     }
 
+    #define ECHO printf("(%d, %d) %s\n", yylloc.first_line, yylloc.first_column, yytext);
+
     #define TAB 4
     #define YY_USER_ACTION update_location();
 %}
@@ -30,10 +33,15 @@
 
 %%
 
-\n              {BEGIN (SCOPE); return NEWLINE;}  // checks for the beginning of a scope
+" "|\t                      // discard whitespace
+\n { 
+    BEGIN (SCOPE);
+    spaces = 0;
+    lines = 1;
+}
 
-<*>"//"[^\n]*                       // discard line comments    
-<*>"/*"         BEGIN (COMMENT);    // starts a multiline comment
+<*>"//"[^\n]*               // discard comments    
+<*>"/*"                     BEGIN (COMMENT); // begin multiline comment
 
 "="                         return EQUALS;
 ":"                         return COLON;
@@ -56,32 +64,43 @@
 "times"                     return TIMES;
 "backwards"                 return BACKWARDS;
 
+"#groups"                   return GROUPS;
+"#blocks"                   return BLOCKS;
+
 "."[1-9][[:digit:]]*        return NUMBER;
 [[:alpha:]]+[[:alnum:]]+    return IDENTIFIER;
 [[:graph:]]                 return SYMBOL;
 
-<COMMENT>"*/"   BEGIN (INITIAL);            // end multiline comment
-<COMMENT>[^*]                               // skip comment body
-<COMMENT>"*"                                // skip single *
+<COMMENT>[^*]               // skip comment body
+<COMMENT>"*"                // skip single *
+<COMMENT>"*/"               BEGIN (INITIAL); // end multiline comment
 
-<SCOPE>" "  {spaces++;}                     // increase the indent
-<SCOPE>\n   {spaces = 0; return NEWLINE;}   // reset the indent
-<SCOPE>\t   {spaces += TAB;}                // add a tab to the indent
-<SCOPE>.    {
-                unput(*yytext);
-                if (spaces == TAB * indent) BEGIN(INITIAL);
+<SCOPE>" "                  spaces++; // increase the indent
+<SCOPE>\t                   spaces += TAB; // add a tab to the indent
+<SCOPE>\n                   {spaces = 0; lines++;} // reset the indent
+<SCOPE>. {
+    unput(*yytext);
+    yylloc.last_column--;
 
-                else if (spaces == TAB * (indent + 1))
-                {
-                    indent++;
-                    return INDENT;
-                }
-                else if (spaces == TAB * (indent - 1))
-                {
-                    indent--;
-                    return UNINDENT;
-                }
-                else yyerror("mismatched indentation");
-            }
+    if (spaces == TAB * indent && lines == 0) BEGIN(INITIAL);
 
+    else if (spaces % TAB == 0 && spaces/TAB != indent) {
+        if (spaces > TAB * indent) {
+            indent++;
+            return INDENT;
+        }
+
+        else {
+            indent--;
+            return UNINDENT;
+        }
+    }
+
+    else if (lines > 0) {
+        lines--;
+        return NEWLINE;
+    }
+
+    else yyerror("mismatched indentation");
+}
 %%

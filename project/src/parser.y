@@ -54,6 +54,7 @@
 %token MARK UNMARK MARKED UNMARKED
 %token LEFT RIGHT
 %token UNTIL TIMES BACKWARDS
+%token GROUPS BLOCKS
 
 %token <identifier> IDENTIFIER
 %token <symbol>     SYMBOL
@@ -97,13 +98,13 @@ program:
     ;
 
 groups: 
-    group                           {}
-    | groups NEWLINE group          {}
+    GROUPS newlines                         {}
+    | groups  group newlines       {}
     ;
 
 blocks: 
-    block                           {}
-    | blocks NEWLINE block          {}
+    BLOCKS newlines                         {}
+    | blocks  block newlines    {}
     ; 
 
 group: 
@@ -134,12 +135,22 @@ symbol:
     ;
 
 scope: 
-    INDENT statement UNINDENT       {$$ = $2;}
+    INDENT newlines statement optional_newlines UNINDENT {$$ = $3;}
+    ;
+
+optional_newlines:
+    %empty
+    | newlines
+    ;
+
+newlines:
+    NEWLINE
+    | newlines NEWLINE
     ;
 
 statement:
     write travel transition         {$$ = operation($1, $2, $3);}
-    | IF condition scope else       {$$ = conditional($2, $3, $4);}
+    | IF condition scope newlines else   {$$ = conditional($2, $3, $5);}
     | ACCEPT                        {$$ = accept();}
     | REJECTION                     {$$ = reject();}
     ;
@@ -162,7 +173,7 @@ travel:
     ;
 
 transition: 
-    NEWLINE statement               {$$ = &$2;}
+    newlines statement               {$$ = &$2;}
     | COMMA DO IDENTIFIER           {
                                         statement_t** reference = find($3, blocks);
 

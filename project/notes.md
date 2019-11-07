@@ -24,3 +24,5 @@ started working on action rules for the parser, created structs for each key pro
 filled out different token types, added location tracking and error messages
 
 worked on resolving shift reduce conflicts in grammar and forward declarations of block names
+
+fixed conflicts by adding block and group initialiser keywords, finally got a successful parse
