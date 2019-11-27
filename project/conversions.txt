@@ -1,0 +1,54 @@
+for convention, start will be the preceding state
+
+accept
+
+    for (symbol <- symbols)
+        start symbol right symbol accept
+
+reject
+
+    for (symbol <- symbols)
+        start symbol right symbol reject
+
+write output [backwards] n times until stopWriting, go moveDirection m times until stopMoving, do block
+
+    writeDirection = if backwards then left else right
+    last = start
+    for (i = 0, i < n, i++)
+        for (out <- output)
+            state = declare state
+            for (symbol <- symbols)
+                last symbol writeDirection out state
+            last = state
+
+    stop = declare state
+    for (symbol <- symbols)
+        if symbol in stopWriting 
+        then
+            last symbol writeDirection symbol stop
+        else
+            last symbol writeDirection symbol start
+
+    last = stop
+    for (i = 0, i < m, i++)
+        state = declare state
+        for (symbol <- symbols)
+            last symbol direction symbol state
+        last = state
+    
+    end = block
+    for (symbol <- symbols)
+        if symbol in stopMoving
+        then
+            last symbol moveDirection symbol end
+        else
+            last symbol moveDirection symbol stop
+
+if condition
+    s1
+s2
+
+    for (symbol <- symbols)
+        if symbol in condition
+        then
+            start 
