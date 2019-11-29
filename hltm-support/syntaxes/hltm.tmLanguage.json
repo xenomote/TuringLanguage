@@ -1,0 +1,78 @@
+{
+	"$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+	"name": "HLTM",
+	"patterns": [
+		{"include": "#keywords"},
+        {"include": "#strings"},
+        {"include": "#comments"},
+        {"include": "#blocks"},
+        {"include": "#groups"},
+        {"include": "#constants"}
+	],
+	"repository": {
+		"keywords": {
+			"patterns": [
+                {
+                    "name": "keyword.control",
+                    "match": "\\b(if|or|else|until|accept|reject|times)\\b"
+                },
+                {
+                    "name": "keyword.control.less",
+                    "match": "\\b(write|go|do|mark|unmark|backwards)\\b"
+                },
+                {
+                    "name": "keyword.operator",
+                    "match": "=|:|,"
+                },
+                {
+                    "name": "constant.language",
+                    "match": "\\b(left|right|marked|unmarked)\\b"
+                },
+                {
+                    "name": "header",
+                    "match": "^#(groups|blocks)$"
+                }
+            ]
+		},
+		"strings": {
+			"name": "string.quoted.double",
+			"begin": "\"",
+			"end": "\""
+        },
+        "comments": {
+            "patterns": [
+                {
+                    "name" : "comment.line.double-slash",
+                    "match" : "\\/\\/.*"
+                },
+                {
+                    "name" : "comment.block",
+                    "begin": "\\/\\*",
+                    "end": "\\*\\/"
+                }
+            ]
+        },
+        "blocks": {
+            "name": "entity.name.section",
+            "match": "(?<=do )[a-zA-Z][a-zA-Z0-9]+|[a-zA-Z][a-zA-Z0-9]+(?=:)"
+        },
+        "groups": {
+            "name": "variable.name",
+            "match": "[a-zA-Z][a-zA-Z0-9]+"
+        },
+        "constants": {
+            "patterns": [
+                {
+                    "name": "constant.character",
+                    "match": "[a-zA-Z0-9]"
+                },
+                {
+                    "name": "constant.numeric",
+                    "match": "\\.[0-9]+"
+                }
+            ]
+        }
+    },
+    "scopeName": "source.hltm",
+    "fileTypes": [".tm", ".hltm"]
+}
