@@ -89,7 +89,7 @@ condition_t* join(condition_t* left, condition_t* right);
 statement_t* accept();
 statement_t* reject();
 
-statement_t* conditional(condition_t* condition, statement_t* success, statement_t* failure);
+statement_t* conditional(condition_t* condition);
 statement_t* operation(write_t* write, travel_t* travel, statement_t** next);
 
 write_t* mark();

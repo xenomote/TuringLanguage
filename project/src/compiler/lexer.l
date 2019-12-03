@@ -92,7 +92,7 @@
 
         else {
             indent--;
-            return UNINDENT;
+            return DEDENT;
         }
     }
 
@@ -102,5 +102,14 @@
     }
 
     else yyerror("mismatched indentation");
+}
+
+<<EOF>>         {
+                if (indent > 0) {
+                    indent--;
+                    return DEDENT;
+                }
+
+    return EOF;
 }
 %%

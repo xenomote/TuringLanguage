@@ -47,7 +47,7 @@
 %locations
 %define parse.error verbose
 
-%token INDENT UNINDENT NEWLINE
+%token INDENT DEDENT NEWLINE
 %token IF OR ELSE
 %token ACCEPT REJECTION
 %token WRITE GO DO
@@ -59,6 +59,7 @@
 %token <identifier> IDENTIFIER
 %token <symbol>     SYMBOL
 %token <number>     NUMBER
+%token <string>     STRING
 
 %token EQUALS       "="
 %token COMMA        ","
@@ -67,7 +68,7 @@
 %type <list> groups blocks
 %type <group> group
 %type <block> block
-%type <statement> program statement scope else
+%type <statement> program statements else_statements scope else
 %type <condition> condition until symbol symbols
 %type <write> write
 %type <travel> travel
@@ -81,169 +82,187 @@
 %%
 
 program:
-    groups blocks statement         {
-                                        list_t* node = blocks;
-                                        
-                                        while (node != NULL) {
-                                            statement_t** reference = node -> value;
-                                            
-                                            if (reference == NULL || *reference == NULL)
-                                                yyerror("undefined block");
-
-                                            node = node -> next;
-                                        }
-
-                                        program = $3;
-                                    }
+    groups statements blocks
     ;
 
-groups: 
-    GROUPS newlines                         {}
-    | groups  group newlines       {}
+groups:
+    group newlines1 groups
+    | %empty
     ;
 
-blocks: 
-    BLOCKS newlines                         {}
-    | blocks  block newlines    {}
-    ; 
 
-group: 
-    IDENTIFIER "=" symbols          {groups = push($1, $3, groups);}
+group:
+    IDENTIFIER EQUALS symbols
     ;
 
-block: 
-    IDENTIFIER ":" scope            {
-                                        statement_t** reference = find($1, blocks);
-
-                                        if (reference == NULL) {
-                                            reference = malloc(sizeof(statement_t*));
-                                            blocks = push($1, reference, blocks);
-                                        }
-
-                                        *reference = $3;
-                                    }
+symbols:
+    symbols COMMA SYMBOL
+    | SYMBOL
     ;
 
-symbols: 
-    symbols "," symbol              {$$ = join($1, $3);}
-    | symbol                        {$$ = $1;}
+blocks:
+    blocks newlines1 block
+    | %empty
     ;
 
-symbol: 
-    SYMBOL                          {$$ = symbol(false, $1);}
-    | MARKED SYMBOL                 {$$ = symbol(true, $2);}
+block:
+    IDENTIFIER COLON indent statements
     ;
 
-scope: 
-    INDENT newlines statement optional_newlines UNINDENT {$$ = $3;}
+statements:
+    IF condition indent if_statements
+    | write go do
+    | ACCEPT ors
+    | REJECTION ors
     ;
 
-optional_newlines:
-    %empty
-    | newlines
+
+write:
+    WRITE SYMBOL COMMA
+    | WRITE STRING reversal repetition COMMA
+    | MARK COMMA           
+    | UNMARK COMMA
+    | %empty
     ;
 
-newlines:
-    NEWLINE
-    | newlines NEWLINE
+go:
+    GO direction until
     ;
 
-statement:
-    write travel transition         {$$ = operation($1, $2, $3);}
-    | IF condition scope newlines else   {$$ = conditional($2, $3, $5);}
-    | ACCEPT                        {$$ = accept();}
-    | REJECTION                     {$$ = reject();}
+do:
+    COMMA DO IDENTIFIER
+    | newlines1 statements
     ;
 
-else: 
-    OR condition scope else         {$$ = conditional($2, $3, $4);}
-    | ELSE scope                    {$$ = $2;}
-    | statement                     {$$ = $1;}
+
+if_statements:
+    write go if_do
+    | IF condition indent if_statements
+    | ACCEPT do_ors
+    | REJECTION do_ors
     ;
 
-write: 
-    %empty                                      {$$ = NULL;}
-    | MARK COMMA                                {$$ = mark();}
-    | UNMARK COMMA                              {$$ = unmark();}
-    | WRITE string reversal repetition COMMA    {$$ = writes(strdup(buffer), $3, $4);}
+if_do:
+    COMMA DO IDENTIFIER dedent statements
+    | COMMA DO IDENTIFIER do_ors
+    | if_statements
+    | ors
     ;
 
-travel: 
-    GO direction repetition until   {$$ = travel($2, $3, $4);}
+ors:
+    dedent OR condition indent or_statements
+    | else
     ;
 
-transition: 
-    newlines statement               {$$ = &$2;}
-    | COMMA DO IDENTIFIER           {
-                                        statement_t** reference = find($3, blocks);
-
-                                        if (reference == NULL) {
-                                            reference = malloc(sizeof(statement_t*));
-                                            *reference = NULL;
-                                            blocks = push($3, reference, blocks);
-                                        }
-
-                                        $$ = reference;
-                                    }
+or_statements:
+    IF condition indent if_statements
+    | write go or_do
+    | ACCEPT dedent
+    | REJECTION dedent
     ;
 
-direction: 
-    LEFT                            {$$ = LEFT_D;}
-    | RIGHT                         {$$ = RIGHT_D;}
+or_do:
+    COMMA DO IDENTIFIER dedent statements
+    | or_statements
     ;
 
-string: 
-    string SYMBOL                   {
-                                        buffer[n++] = $2;
-                                        buffer[n] = '\0';
-                                    }
-    | SYMBOL                        {
-                                        n = 0;
-                                        buffer[n++] = $1;
-                                        buffer[n] = '\0';                                        
-                                    }
+else:
+    dedent ELSE indent else_statements
+    | dedent statements
     ;
 
-reversal: 
-    %empty                          {$$ = RIGHT_D;}
-    | BACKWARDS                     {$$ = LEFT_D;}
+else_statements:
+    IF condition indent if_statements
+    | write go else_do
+    | ACCEPT dedent
+    | REJECTION dedent
     ;
 
-repetition: 
-    %empty                          {$$ = 1;}
-    |  NUMBER TIMES                 {$$ = $1;}
+else_do:
+    COMMA DO IDENTIFIER dedent statements
+    | else_statements
     ;
 
-until: 
-    %empty                          {$$ = NULL;}
-    | UNTIL condition               {$$ = $2;}
+do_ors:
+    dedent OR condition indent do_or_statements
+    | dedent newlines statements
+    | do_else
+    ;
+
+do_or_statements:
+    IF condition indent if_statements
+    | write go do_or_do
+    | ACCEPT do_else
+    | REJECTION do_else
+    ;
+
+do_or_do:
+    COMMA DO IDENTIFIER dedent
+    | COMMA DO IDENTIFIER do_else
+    | do_or_statements
+    | dedent statements
+    ;
+
+do_else:
+    dedent newlines ELSE indent do_else_statements
+    ;
+
+do_else_statements:
+    IF condition indent if_statements
+    | write go do_else_do
+    | ACCEPT DEDENT
+    | REJECTION DEDENT 
+    ;
+
+do_else_do:
+    COMMA DO IDENTIFIER DEDENT DEDENT
+    | do_else_statements
+    | DEDENT statements
     ;
 
 condition:
-    symbol                          {$$ = $1;}
-    | MARKED                        {$$ = marked();}
-    | UNMARKED                      {$$ = unmarked();}
-    | condition OR symbol           {$$ = join($1, $3);}
-    | condition OR IDENTIFIER       {
-                                        condition_t* group = find($3, groups);
+    SYMBOL
+    | MARKED
+    | UNMARKED
+    | condition OR SYMBOL
+    ;
 
-                                        if (group != NULL)
-                                            $$ = join($1, group);
+direction:
+    LEFT
+    | RIGHT
+    ;
 
-                                        else
-                                            yyerror("couldnt find group");
-                                    }
-    | IDENTIFIER                    {
-                                        condition_t* group = find($1, groups);
+reversal:
+    BACKWARDS
+    | %empty
+    ;
 
-                                        if (group != NULL)
-                                            $$ = group;
+repetition:
+    NUMBER
+    | %empty
+    ;
 
-                                        else
-                                            yyerror("couldnt find group");
-                                    }
-    ;    
+until:
+    UNTIL condition
+    | %empty
+    ;
 
+indent:
+    INDENT newlines
+    ;
+
+dedent:
+    DEDENT NEWLINE
+    ;
+
+newlines1:
+    NEWLINE newlines
+    ;
+
+newlines:
+    %empty
+    | newlines NEWLINE
+    ;
 %%
 
 void yyerror(const char* s) {
