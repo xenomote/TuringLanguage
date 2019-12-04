@@ -104,11 +104,16 @@
     else yyerror("mismatched indentation");
 }
 
-<<EOF>>         {
-                if (indent > 0) {
-                    indent--;
-                    return DEDENT;
-                }
+<<EOF>> {   
+    if (indent > 0) {
+        indent--;
+        return DEDENT;
+    }
+
+    if (indent == 0) {
+        indent--;
+        return NEWLINE;
+    }
 
     return EOF;
 }

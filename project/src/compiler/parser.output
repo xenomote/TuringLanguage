@@ -1,175 +1,120 @@
-Nonterminals useless in grammar
-
-   scope
-   string
-   symbol
-   transition
-   travel
-
-
 Terminals unused in grammar
 
-   TIMES
    GROUPS
    BLOCKS
-
-
-State 141 conflicts: 6 shift/reduce, 1 reduce/reduce
-State 180 conflicts: 1 reduce/reduce
+   END
 
 
 Grammar
 
     0 $accept: program $end
 
-    1 program: groups statements blocks
+    1 program: optional_newlines optional_groups statement optional_newlines optional_blocks
 
-    2 groups: group newlines1 groups
-    3       | %empty
+    2 optional_groups: %empty
+    3                | groups
 
-    4 group: IDENTIFIER "=" symbols
+    4 groups: group newlines
+    5       | groups group newlines
 
-    5 symbols: symbols "," SYMBOL
-    6        | SYMBOL
+    6 group: IDENTIFIER "=" symbols
 
-    7 blocks: blocks newlines1 block
-    8       | %empty
+    7 optional_blocks: %empty
+    8                | blocks
 
-    9 block: IDENTIFIER ":" indent statements
+    9 blocks: block newlines
+   10       | blocks block newlines
 
-   10 statements: IF condition indent if_statements
-   11           | write go do
-   12           | ACCEPT ors
-   13           | REJECTION ors
+   11 block: IDENTIFIER ":" scope
 
-   14 write: WRITE SYMBOL ","
-   15      | WRITE STRING reversal repetition ","
-   16      | MARK ","
-   17      | UNMARK ","
-   18      | %empty
+   12 symbols: symbols "," symbol
+   13        | symbol
 
-   19 go: GO direction until
+   14 symbol: SYMBOL
+   15       | MARKED SYMBOL
 
-   20 do: "," DO IDENTIFIER
-   21   | newlines1 statements
+   16 scope: INDENT newlines statement optional_newlines DEDENT
 
-   22 if_statements: write go if_do
-   23              | IF condition indent if_statements
-   24              | ACCEPT do_ors
-   25              | REJECTION do_ors
+   17 newlines: NEWLINE optional_newlines
 
-   26 if_do: "," DO IDENTIFIER dedent statements
-   27      | "," DO IDENTIFIER do_ors
-   28      | if_statements
-   29      | ors
+   18 optional_newlines: %empty
+   19                  | optional_newlines NEWLINE
 
-   30 ors: dedent OR condition indent or_statements
-   31    | else
+   20 statement: write travel transition
+   21          | IF condition scope newlines else
+   22          | ACCEPT
+   23          | REJECTION
 
-   32 or_statements: IF condition indent if_statements
-   33              | write go or_do
-   34              | ACCEPT dedent
-   35              | REJECTION dedent
+   24 else: OR condition scope else
+   25     | ELSE scope
+   26     | statement
 
-   36 or_do: "," DO IDENTIFIER dedent statements
-   37      | or_statements
+   27 write: %empty
+   28      | MARK ","
+   29      | UNMARK ","
+   30      | WRITE string reversal repetition ","
 
-   38 else: dedent ELSE indent else_statements
-   39     | dedent statements
+   31 travel: GO direction repetition until
 
-   40 else_statements: IF condition indent if_statements
-   41                | write go else_do
-   42                | ACCEPT dedent
-   43                | REJECTION dedent
+   32 transition: newlines statement
+   33           | "," DO IDENTIFIER
 
-   44 else_do: "," DO IDENTIFIER dedent statements
-   45        | else_statements
+   34 direction: LEFT
+   35          | RIGHT
 
-   46 do_ors: dedent OR condition indent do_or_statements
-   47       | dedent newlines statements
-   48       | do_else
+   36 string: string SYMBOL
+   37       | SYMBOL
 
-   49 do_or_statements: IF condition indent if_statements
-   50                 | write go do_or_do
-   51                 | ACCEPT do_else
-   52                 | REJECTION do_else
+   38 reversal: %empty
+   39         | BACKWARDS
 
-   53 do_or_do: "," DO IDENTIFIER dedent
-   54         | "," DO IDENTIFIER do_else
-   55         | do_or_statements
-   56         | dedent statements
+   40 repetition: %empty
+   41           | NUMBER TIMES
 
-   57 do_else: dedent newlines ELSE indent do_else_statements
+   42 until: %empty
+   43      | UNTIL condition
 
-   58 do_else_statements: IF condition indent if_statements
-   59                   | write go do_else_do
-   60                   | ACCEPT DEDENT
-   61                   | REJECTION DEDENT
-
-   62 do_else_do: "," DO IDENTIFIER DEDENT DEDENT
-   63           | do_else_statements
-   64           | DEDENT statements
-
-   65 condition: SYMBOL
-   66          | MARKED
-   67          | UNMARKED
-   68          | condition OR SYMBOL
-
-   69 direction: LEFT
-   70          | RIGHT
-
-   71 reversal: BACKWARDS
-   72         | %empty
-
-   73 repetition: NUMBER
-   74           | %empty
-
-   75 until: UNTIL condition
-   76      | %empty
-
-   77 indent: INDENT newlines
-
-   78 dedent: DEDENT NEWLINE
-
-   79 newlines1: NEWLINE newlines
-
-   80 newlines: %empty
-   81         | newlines NEWLINE
+   44 condition: symbol
+   45          | MARKED
+   46          | UNMARKED
+   47          | condition OR symbol
+   48          | condition OR IDENTIFIER
+   49          | IDENTIFIER
 
 
 Terminals, with rules where they appear
 
 $end (0) 0
 error (256)
-INDENT (258) 77
-DEDENT (259) 60 61 62 64 78
-NEWLINE (260) 78 79 81
-IF (261) 10 23 32 40 49 58
-OR (262) 30 46 68
-ELSE (263) 38 57
-ACCEPT (264) 12 24 34 42 51 60
-REJECTION (265) 13 25 35 43 52 61
-WRITE (266) 14 15
-GO (267) 19
-DO (268) 20 26 27 36 44 53 54 62
-MARK (269) 16
-UNMARK (270) 17
-MARKED (271) 66
-UNMARKED (272) 67
-LEFT (273) 69
-RIGHT (274) 70
-UNTIL (275) 75
-TIMES (276)
-BACKWARDS (277) 71
+INDENT (258) 16
+DEDENT (259) 16
+NEWLINE (260) 17 19
+IF (261) 21
+OR (262) 24 47 48
+ELSE (263) 25
+ACCEPT (264) 22
+REJECTION (265) 23
+WRITE (266) 30
+GO (267) 31
+DO (268) 33
+MARK (269) 28
+UNMARK (270) 29
+MARKED (271) 15 45
+UNMARKED (272) 46
+LEFT (273) 34
+RIGHT (274) 35
+UNTIL (275) 43
+TIMES (276) 41
+BACKWARDS (277) 39
 GROUPS (278)
 BLOCKS (279)
-IDENTIFIER (280) 4 9 20 26 27 36 44 53 54 62
-SYMBOL (281) 5 6 14 65 68
-NUMBER (282) 73
-STRING (283) 15
-"=" (284) 4
-"," (285) 5 14 15 16 17 20 26 27 36 44 53 54 62
-":" (286) 9
+END (280)
+IDENTIFIER (281) 6 11 33 48 49
+SYMBOL (282) 14 15 36 37
+NUMBER (283) 41
+"=" (284) 6
+"," (285) 12 28 29 30 33
+":" (286) 11
 
 
 Nonterminals, with rules where they appear
@@ -178,2220 +123,986 @@ $accept (32)
     on left: 0
 program (33)
     on left: 1, on right: 0
-groups (34)
-    on left: 2 3, on right: 1 2
-group (35)
-    on left: 4, on right: 2
-symbols (36)
-    on left: 5 6, on right: 4 5
-blocks (37)
-    on left: 7 8, on right: 1 7
-block (38)
-    on left: 9, on right: 7
-statements (39)
-    on left: 10 11 12 13, on right: 1 9 21 26 36 39 44 47 56 64
-write (40)
-    on left: 14 15 16 17 18, on right: 11 22 33 41 50 59
-go (41)
-    on left: 19, on right: 11 22 33 41 50 59
-do (42)
-    on left: 20 21, on right: 11
-if_statements (43)
-    on left: 22 23 24 25, on right: 10 23 28 32 40 49 58
-if_do (44)
-    on left: 26 27 28 29, on right: 22
-ors (45)
-    on left: 30 31, on right: 12 13 29
-or_statements (46)
-    on left: 32 33 34 35, on right: 30 37
-or_do (47)
-    on left: 36 37, on right: 33
-else (48)
-    on left: 38 39, on right: 31
-else_statements (49)
-    on left: 40 41 42 43, on right: 38 45
-else_do (50)
-    on left: 44 45, on right: 41
-do_ors (51)
-    on left: 46 47 48, on right: 24 25 27
-do_or_statements (52)
-    on left: 49 50 51 52, on right: 46 55
-do_or_do (53)
-    on left: 53 54 55 56, on right: 50
-do_else (54)
-    on left: 57, on right: 48 51 52 54
-do_else_statements (55)
-    on left: 58 59 60 61, on right: 57 63
-do_else_do (56)
-    on left: 62 63 64, on right: 59
-condition (57)
-    on left: 65 66 67 68, on right: 10 23 30 32 40 46 49 58 68 75
-direction (58)
-    on left: 69 70, on right: 19
-reversal (59)
-    on left: 71 72, on right: 15
-repetition (60)
-    on left: 73 74, on right: 15
-until (61)
-    on left: 75 76, on right: 19
-indent (62)
-    on left: 77, on right: 9 10 23 30 32 38 40 46 49 57 58
-dedent (63)
-    on left: 78, on right: 26 30 34 35 36 38 39 42 43 44 46 47 53 56
-    57
-newlines1 (64)
-    on left: 79, on right: 2 7 21
-newlines (65)
-    on left: 80 81, on right: 47 57 77 79 81
+optional_groups (34)
+    on left: 2 3, on right: 1
+groups (35)
+    on left: 4 5, on right: 3 5
+group (36)
+    on left: 6, on right: 4 5
+optional_blocks (37)
+    on left: 7 8, on right: 1
+blocks (38)
+    on left: 9 10, on right: 8 10
+block (39)
+    on left: 11, on right: 9 10
+symbols (40)
+    on left: 12 13, on right: 6 12
+symbol (41)
+    on left: 14 15, on right: 12 13 44 47
+scope (42)
+    on left: 16, on right: 11 21 24 25
+newlines (43)
+    on left: 17, on right: 4 5 9 10 16 21 32
+optional_newlines (44)
+    on left: 18 19, on right: 1 16 17 19
+statement (45)
+    on left: 20 21 22 23, on right: 1 16 26 32
+else (46)
+    on left: 24 25 26, on right: 21 24
+write (47)
+    on left: 27 28 29 30, on right: 20
+travel (48)
+    on left: 31, on right: 20
+transition (49)
+    on left: 32 33, on right: 20
+direction (50)
+    on left: 34 35, on right: 31
+string (51)
+    on left: 36 37, on right: 30 36
+reversal (52)
+    on left: 38 39, on right: 30
+repetition (53)
+    on left: 40 41, on right: 30 31
+until (54)
+    on left: 42 43, on right: 31
+condition (55)
+    on left: 44 45 46 47 48 49, on right: 21 24 43 47 48
 
 
 State 0
 
     0 $accept: . program $end
-    1 program: . groups statements blocks
-    2 groups: . group newlines1 groups
-    3       | . %empty  [IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
-    4 group: . IDENTIFIER "=" symbols
+    1 program: . optional_newlines optional_groups statement optional_newlines optional_blocks
+   18 optional_newlines: . %empty
+   19                  | . optional_newlines NEWLINE
 
-    IDENTIFIER  shift, and go to state 1
+    $default  reduce using rule 18 (optional_newlines)
 
-    $default  reduce using rule 3 (groups)
-
-    program  go to state 2
-    groups   go to state 3
-    group    go to state 4
+    program            go to state 1
+    optional_newlines  go to state 2
 
 
 State 1
 
-    4 group: IDENTIFIER . "=" symbols
+    0 $accept: program . $end
 
-    "="  shift, and go to state 5
+    $end  shift, and go to state 3
 
 
 State 2
 
-    0 $accept: program . $end
+    1 program: optional_newlines . optional_groups statement optional_newlines optional_blocks
+    2 optional_groups: . %empty  [IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
+    3                | . groups
+    4 groups: . group newlines
+    5       | . groups group newlines
+    6 group: . IDENTIFIER "=" symbols
+   19 optional_newlines: optional_newlines . NEWLINE
 
-    $end  shift, and go to state 6
+    NEWLINE     shift, and go to state 4
+    IDENTIFIER  shift, and go to state 5
+
+    $default  reduce using rule 2 (optional_groups)
+
+    optional_groups  go to state 6
+    groups           go to state 7
+    group            go to state 8
 
 
 State 3
-
-    1 program: groups . statements blocks
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-
-    IF         shift, and go to state 7
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 13
-    write       go to state 14
-
-
-State 4
-
-    2 groups: group . newlines1 groups
-   79 newlines1: . NEWLINE newlines
-
-    NEWLINE  shift, and go to state 15
-
-    newlines1  go to state 16
-
-
-State 5
-
-    4 group: IDENTIFIER "=" . symbols
-    5 symbols: . symbols "," SYMBOL
-    6        | . SYMBOL
-
-    SYMBOL  shift, and go to state 17
-
-    symbols  go to state 18
-
-
-State 6
 
     0 $accept: program $end .
 
     $default  accept
 
 
+State 4
+
+   19 optional_newlines: optional_newlines NEWLINE .
+
+    $default  reduce using rule 19 (optional_newlines)
+
+
+State 5
+
+    6 group: IDENTIFIER . "=" symbols
+
+    "="  shift, and go to state 9
+
+
+State 6
+
+    1 program: optional_newlines optional_groups . statement optional_newlines optional_blocks
+   20 statement: . write travel transition
+   21          | . IF condition scope newlines else
+   22          | . ACCEPT
+   23          | . REJECTION
+   27 write: . %empty  [GO]
+   28      | . MARK ","
+   29      | . UNMARK ","
+   30      | . WRITE string reversal repetition ","
+
+    IF         shift, and go to state 10
+    ACCEPT     shift, and go to state 11
+    REJECTION  shift, and go to state 12
+    WRITE      shift, and go to state 13
+    MARK       shift, and go to state 14
+    UNMARK     shift, and go to state 15
+
+    $default  reduce using rule 27 (write)
+
+    statement  go to state 16
+    write      go to state 17
+
+
 State 7
 
-   10 statements: IF . condition indent if_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
+    3 optional_groups: groups .  [IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
+    5 groups: groups . group newlines
+    6 group: . IDENTIFIER "=" symbols
 
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
+    IDENTIFIER  shift, and go to state 5
 
-    condition  go to state 22
+    $default  reduce using rule 3 (optional_groups)
+
+    group  go to state 18
 
 
 State 8
 
-   12 statements: ACCEPT . ors
-   30 ors: . dedent OR condition indent or_statements
-   31    | . else
-   38 else: . dedent ELSE indent else_statements
-   39     | . dedent statements
-   78 dedent: . DEDENT NEWLINE
+    4 groups: group . newlines
+   17 newlines: . NEWLINE optional_newlines
 
-    DEDENT  shift, and go to state 23
+    NEWLINE  shift, and go to state 19
 
-    ors     go to state 24
-    else    go to state 25
-    dedent  go to state 26
+    newlines  go to state 20
 
 
 State 9
 
-   13 statements: REJECTION . ors
-   30 ors: . dedent OR condition indent or_statements
-   31    | . else
-   38 else: . dedent ELSE indent else_statements
-   39     | . dedent statements
-   78 dedent: . DEDENT NEWLINE
+    6 group: IDENTIFIER "=" . symbols
+   12 symbols: . symbols "," symbol
+   13        | . symbol
+   14 symbol: . SYMBOL
+   15       | . MARKED SYMBOL
 
-    DEDENT  shift, and go to state 23
+    MARKED  shift, and go to state 21
+    SYMBOL  shift, and go to state 22
 
-    ors     go to state 27
-    else    go to state 25
-    dedent  go to state 26
+    symbols  go to state 23
+    symbol   go to state 24
 
 
 State 10
 
-   14 write: WRITE . SYMBOL ","
-   15      | WRITE . STRING reversal repetition ","
+   14 symbol: . SYMBOL
+   15       | . MARKED SYMBOL
+   21 statement: IF . condition scope newlines else
+   44 condition: . symbol
+   45          | . MARKED
+   46          | . UNMARKED
+   47          | . condition OR symbol
+   48          | . condition OR IDENTIFIER
+   49          | . IDENTIFIER
 
-    SYMBOL  shift, and go to state 28
-    STRING  shift, and go to state 29
+    MARKED      shift, and go to state 25
+    UNMARKED    shift, and go to state 26
+    IDENTIFIER  shift, and go to state 27
+    SYMBOL      shift, and go to state 22
+
+    symbol     go to state 28
+    condition  go to state 29
 
 
 State 11
 
-   16 write: MARK . ","
+   22 statement: ACCEPT .
 
-    ","  shift, and go to state 30
+    $default  reduce using rule 22 (statement)
 
 
 State 12
 
-   17 write: UNMARK . ","
+   23 statement: REJECTION .
 
-    ","  shift, and go to state 31
+    $default  reduce using rule 23 (statement)
 
 
 State 13
 
-    1 program: groups statements . blocks
-    7 blocks: . blocks newlines1 block
-    8       | . %empty
+   30 write: WRITE . string reversal repetition ","
+   36 string: . string SYMBOL
+   37       | . SYMBOL
 
-    $default  reduce using rule 8 (blocks)
+    SYMBOL  shift, and go to state 30
 
-    blocks  go to state 32
+    string  go to state 31
 
 
 State 14
 
-   11 statements: write . go do
-   19 go: . GO direction until
+   28 write: MARK . ","
 
-    GO  shift, and go to state 33
-
-    go  go to state 34
+    ","  shift, and go to state 32
 
 
 State 15
 
-   79 newlines1: NEWLINE . newlines
-   80 newlines: . %empty
-   81         | . newlines NEWLINE
+   29 write: UNMARK . ","
 
-    $default  reduce using rule 80 (newlines)
-
-    newlines  go to state 35
+    ","  shift, and go to state 33
 
 
 State 16
 
-    2 groups: . group newlines1 groups
-    2       | group newlines1 . groups
-    3       | . %empty  [IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
-    4 group: . IDENTIFIER "=" symbols
+    1 program: optional_newlines optional_groups statement . optional_newlines optional_blocks
+   18 optional_newlines: . %empty
+   19                  | . optional_newlines NEWLINE
 
-    IDENTIFIER  shift, and go to state 1
+    $default  reduce using rule 18 (optional_newlines)
 
-    $default  reduce using rule 3 (groups)
-
-    groups  go to state 36
-    group   go to state 4
+    optional_newlines  go to state 34
 
 
 State 17
 
-    6 symbols: SYMBOL .
+   20 statement: write . travel transition
+   31 travel: . GO direction repetition until
 
-    $default  reduce using rule 6 (symbols)
+    GO  shift, and go to state 35
+
+    travel  go to state 36
 
 
 State 18
 
-    4 group: IDENTIFIER "=" symbols .  [NEWLINE]
-    5 symbols: symbols . "," SYMBOL
+    5 groups: groups group . newlines
+   17 newlines: . NEWLINE optional_newlines
 
-    ","  shift, and go to state 37
+    NEWLINE  shift, and go to state 19
 
-    $default  reduce using rule 4 (group)
+    newlines  go to state 37
 
 
 State 19
 
-   66 condition: MARKED .
+   17 newlines: NEWLINE . optional_newlines
+   18 optional_newlines: . %empty
+   19                  | . optional_newlines NEWLINE
 
-    $default  reduce using rule 66 (condition)
+    $default  reduce using rule 18 (optional_newlines)
+
+    optional_newlines  go to state 38
 
 
 State 20
 
-   67 condition: UNMARKED .
+    4 groups: group newlines .
 
-    $default  reduce using rule 67 (condition)
+    $default  reduce using rule 4 (groups)
 
 
 State 21
 
-   65 condition: SYMBOL .
+   15 symbol: MARKED . SYMBOL
 
-    $default  reduce using rule 65 (condition)
+    SYMBOL  shift, and go to state 39
 
 
 State 22
 
-   10 statements: IF condition . indent if_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
+   14 symbol: SYMBOL .
 
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
-
-    indent  go to state 40
+    $default  reduce using rule 14 (symbol)
 
 
 State 23
 
-   78 dedent: DEDENT . NEWLINE
+    6 group: IDENTIFIER "=" symbols .  [NEWLINE]
+   12 symbols: symbols . "," symbol
 
-    NEWLINE  shift, and go to state 41
+    ","  shift, and go to state 40
+
+    $default  reduce using rule 6 (group)
 
 
 State 24
 
-   12 statements: ACCEPT ors .
+   13 symbols: symbol .
 
-    $default  reduce using rule 12 (statements)
+    $default  reduce using rule 13 (symbols)
 
 
 State 25
 
-   31 ors: else .
+   15 symbol: MARKED . SYMBOL
+   45 condition: MARKED .  [INDENT, NEWLINE, OR, ","]
 
-    $default  reduce using rule 31 (ors)
+    SYMBOL  shift, and go to state 39
+
+    $default  reduce using rule 45 (condition)
 
 
 State 26
 
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   30 ors: dedent . OR condition indent or_statements
-   38 else: dedent . ELSE indent else_statements
-   39     | dedent . statements
+   46 condition: UNMARKED .
 
-    IF         shift, and go to state 7
-    OR         shift, and go to state 42
-    ELSE       shift, and go to state 43
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 44
-    write       go to state 14
+    $default  reduce using rule 46 (condition)
 
 
 State 27
 
-   13 statements: REJECTION ors .
+   49 condition: IDENTIFIER .
 
-    $default  reduce using rule 13 (statements)
+    $default  reduce using rule 49 (condition)
 
 
 State 28
 
-   14 write: WRITE SYMBOL . ","
+   44 condition: symbol .
 
-    ","  shift, and go to state 45
+    $default  reduce using rule 44 (condition)
 
 
 State 29
 
-   15 write: WRITE STRING . reversal repetition ","
-   71 reversal: . BACKWARDS
-   72         | . %empty  [NUMBER, ","]
+   16 scope: . INDENT newlines statement optional_newlines DEDENT
+   21 statement: IF condition . scope newlines else
+   47 condition: condition . OR symbol
+   48          | condition . OR IDENTIFIER
 
-    BACKWARDS  shift, and go to state 46
+    INDENT  shift, and go to state 41
+    OR      shift, and go to state 42
 
-    $default  reduce using rule 72 (reversal)
-
-    reversal  go to state 47
+    scope  go to state 43
 
 
 State 30
 
-   16 write: MARK "," .
+   37 string: SYMBOL .
 
-    $default  reduce using rule 16 (write)
+    $default  reduce using rule 37 (string)
 
 
 State 31
 
-   17 write: UNMARK "," .
+   30 write: WRITE string . reversal repetition ","
+   36 string: string . SYMBOL
+   38 reversal: . %empty  [NUMBER, ","]
+   39         | . BACKWARDS
 
-    $default  reduce using rule 17 (write)
+    BACKWARDS  shift, and go to state 44
+    SYMBOL     shift, and go to state 45
+
+    $default  reduce using rule 38 (reversal)
+
+    reversal  go to state 46
 
 
 State 32
 
-    1 program: groups statements blocks .  [$end]
-    7 blocks: blocks . newlines1 block
-   79 newlines1: . NEWLINE newlines
+   28 write: MARK "," .
 
-    NEWLINE  shift, and go to state 15
-
-    $default  reduce using rule 1 (program)
-
-    newlines1  go to state 48
+    $default  reduce using rule 28 (write)
 
 
 State 33
 
-   19 go: GO . direction until
-   69 direction: . LEFT
-   70          | . RIGHT
+   29 write: UNMARK "," .
 
-    LEFT   shift, and go to state 49
-    RIGHT  shift, and go to state 50
-
-    direction  go to state 51
+    $default  reduce using rule 29 (write)
 
 
 State 34
 
-   11 statements: write go . do
-   20 do: . "," DO IDENTIFIER
-   21   | . newlines1 statements
-   79 newlines1: . NEWLINE newlines
+    1 program: optional_newlines optional_groups statement optional_newlines . optional_blocks
+    7 optional_blocks: . %empty  [$end]
+    8                | . blocks
+    9 blocks: . block newlines
+   10       | . blocks block newlines
+   11 block: . IDENTIFIER ":" scope
+   19 optional_newlines: optional_newlines . NEWLINE
 
-    NEWLINE  shift, and go to state 15
-    ","      shift, and go to state 52
+    NEWLINE     shift, and go to state 4
+    IDENTIFIER  shift, and go to state 47
 
-    do         go to state 53
-    newlines1  go to state 54
+    $default  reduce using rule 7 (optional_blocks)
+
+    optional_blocks  go to state 48
+    blocks           go to state 49
+    block            go to state 50
 
 
 State 35
 
-   79 newlines1: NEWLINE newlines .  [IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK, IDENTIFIER]
-   81 newlines: newlines . NEWLINE
+   31 travel: GO . direction repetition until
+   34 direction: . LEFT
+   35          | . RIGHT
 
-    NEWLINE  shift, and go to state 55
+    LEFT   shift, and go to state 51
+    RIGHT  shift, and go to state 52
 
-    $default  reduce using rule 79 (newlines1)
+    direction  go to state 53
 
 
 State 36
 
-    2 groups: group newlines1 groups .
+   17 newlines: . NEWLINE optional_newlines
+   20 statement: write travel . transition
+   32 transition: . newlines statement
+   33           | . "," DO IDENTIFIER
 
-    $default  reduce using rule 2 (groups)
+    NEWLINE  shift, and go to state 19
+    ","      shift, and go to state 54
+
+    newlines    go to state 55
+    transition  go to state 56
 
 
 State 37
 
-    5 symbols: symbols "," . SYMBOL
+    5 groups: groups group newlines .
 
-    SYMBOL  shift, and go to state 56
+    $default  reduce using rule 5 (groups)
 
 
 State 38
 
-   77 indent: INDENT . newlines
-   80 newlines: . %empty
-   81         | . newlines NEWLINE
+   17 newlines: NEWLINE optional_newlines .  [$end, IF, OR, ELSE, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK, IDENTIFIER]
+   19 optional_newlines: optional_newlines . NEWLINE
 
-    $default  reduce using rule 80 (newlines)
+    NEWLINE  shift, and go to state 4
 
-    newlines  go to state 57
+    $default  reduce using rule 17 (newlines)
 
 
 State 39
 
-   68 condition: condition OR . SYMBOL
+   15 symbol: MARKED SYMBOL .
 
-    SYMBOL  shift, and go to state 58
+    $default  reduce using rule 15 (symbol)
 
 
 State 40
 
-   10 statements: IF condition indent . if_statements
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   22 if_statements: . write go if_do
-   23              | . IF condition indent if_statements
-   24              | . ACCEPT do_ors
-   25              | . REJECTION do_ors
+   12 symbols: symbols "," . symbol
+   14 symbol: . SYMBOL
+   15       | . MARKED SYMBOL
 
-    IF         shift, and go to state 59
-    ACCEPT     shift, and go to state 60
-    REJECTION  shift, and go to state 61
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
+    MARKED  shift, and go to state 21
+    SYMBOL  shift, and go to state 22
 
-    $default  reduce using rule 18 (write)
-
-    write          go to state 62
-    if_statements  go to state 63
+    symbol  go to state 57
 
 
 State 41
 
-   78 dedent: DEDENT NEWLINE .
+   16 scope: INDENT . newlines statement optional_newlines DEDENT
+   17 newlines: . NEWLINE optional_newlines
 
-    $default  reduce using rule 78 (dedent)
+    NEWLINE  shift, and go to state 19
+
+    newlines  go to state 58
 
 
 State 42
 
-   30 ors: dedent OR . condition indent or_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
+   14 symbol: . SYMBOL
+   15       | . MARKED SYMBOL
+   47 condition: condition OR . symbol
+   48          | condition OR . IDENTIFIER
 
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
+    MARKED      shift, and go to state 21
+    IDENTIFIER  shift, and go to state 59
+    SYMBOL      shift, and go to state 22
 
-    condition  go to state 64
+    symbol  go to state 60
 
 
 State 43
 
-   38 else: dedent ELSE . indent else_statements
-   77 indent: . INDENT newlines
+   17 newlines: . NEWLINE optional_newlines
+   21 statement: IF condition scope . newlines else
 
-    INDENT  shift, and go to state 38
+    NEWLINE  shift, and go to state 19
 
-    indent  go to state 65
+    newlines  go to state 61
 
 
 State 44
 
-   39 else: dedent statements .
+   39 reversal: BACKWARDS .
 
-    $default  reduce using rule 39 (else)
+    $default  reduce using rule 39 (reversal)
 
 
 State 45
 
-   14 write: WRITE SYMBOL "," .
+   36 string: string SYMBOL .
 
-    $default  reduce using rule 14 (write)
+    $default  reduce using rule 36 (string)
 
 
 State 46
 
-   71 reversal: BACKWARDS .
+   30 write: WRITE string reversal . repetition ","
+   40 repetition: . %empty  [","]
+   41           | . NUMBER TIMES
 
-    $default  reduce using rule 71 (reversal)
+    NUMBER  shift, and go to state 62
+
+    $default  reduce using rule 40 (repetition)
+
+    repetition  go to state 63
 
 
 State 47
 
-   15 write: WRITE STRING reversal . repetition ","
-   73 repetition: . NUMBER
-   74           | . %empty  [","]
+   11 block: IDENTIFIER . ":" scope
 
-    NUMBER  shift, and go to state 66
-
-    $default  reduce using rule 74 (repetition)
-
-    repetition  go to state 67
+    ":"  shift, and go to state 64
 
 
 State 48
 
-    7 blocks: blocks newlines1 . block
-    9 block: . IDENTIFIER ":" indent statements
+    1 program: optional_newlines optional_groups statement optional_newlines optional_blocks .
 
-    IDENTIFIER  shift, and go to state 68
-
-    block  go to state 69
+    $default  reduce using rule 1 (program)
 
 
 State 49
 
-   69 direction: LEFT .
+    8 optional_blocks: blocks .  [$end]
+   10 blocks: blocks . block newlines
+   11 block: . IDENTIFIER ":" scope
 
-    $default  reduce using rule 69 (direction)
+    IDENTIFIER  shift, and go to state 47
+
+    $default  reduce using rule 8 (optional_blocks)
+
+    block  go to state 65
 
 
 State 50
 
-   70 direction: RIGHT .
+    9 blocks: block . newlines
+   17 newlines: . NEWLINE optional_newlines
 
-    $default  reduce using rule 70 (direction)
+    NEWLINE  shift, and go to state 19
+
+    newlines  go to state 66
 
 
 State 51
 
-   19 go: GO direction . until
-   75 until: . UNTIL condition
-   76      | . %empty  [DEDENT, NEWLINE, IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK, ","]
+   34 direction: LEFT .
 
-    UNTIL  shift, and go to state 70
-
-    $default  reduce using rule 76 (until)
-
-    until  go to state 71
+    $default  reduce using rule 34 (direction)
 
 
 State 52
 
-   20 do: "," . DO IDENTIFIER
+   35 direction: RIGHT .
 
-    DO  shift, and go to state 72
+    $default  reduce using rule 35 (direction)
 
 
 State 53
 
-   11 statements: write go do .
+   31 travel: GO direction . repetition until
+   40 repetition: . %empty  [NEWLINE, UNTIL, ","]
+   41           | . NUMBER TIMES
 
-    $default  reduce using rule 11 (statements)
+    NUMBER  shift, and go to state 62
+
+    $default  reduce using rule 40 (repetition)
+
+    repetition  go to state 67
 
 
 State 54
 
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   21 do: newlines1 . statements
+   33 transition: "," . DO IDENTIFIER
 
-    IF         shift, and go to state 7
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 73
-    write       go to state 14
+    DO  shift, and go to state 68
 
 
 State 55
 
-   81 newlines: newlines NEWLINE .
+   20 statement: . write travel transition
+   21          | . IF condition scope newlines else
+   22          | . ACCEPT
+   23          | . REJECTION
+   27 write: . %empty  [GO]
+   28      | . MARK ","
+   29      | . UNMARK ","
+   30      | . WRITE string reversal repetition ","
+   32 transition: newlines . statement
 
-    $default  reduce using rule 81 (newlines)
+    IF         shift, and go to state 10
+    ACCEPT     shift, and go to state 11
+    REJECTION  shift, and go to state 12
+    WRITE      shift, and go to state 13
+    MARK       shift, and go to state 14
+    UNMARK     shift, and go to state 15
+
+    $default  reduce using rule 27 (write)
+
+    statement  go to state 69
+    write      go to state 17
 
 
 State 56
 
-    5 symbols: symbols "," SYMBOL .
+   20 statement: write travel transition .
 
-    $default  reduce using rule 5 (symbols)
+    $default  reduce using rule 20 (statement)
 
 
 State 57
 
-   77 indent: INDENT newlines .  [IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
-   81 newlines: newlines . NEWLINE
+   12 symbols: symbols "," symbol .
 
-    NEWLINE  shift, and go to state 55
-
-    $default  reduce using rule 77 (indent)
+    $default  reduce using rule 12 (symbols)
 
 
 State 58
 
-   68 condition: condition OR SYMBOL .
+   16 scope: INDENT newlines . statement optional_newlines DEDENT
+   20 statement: . write travel transition
+   21          | . IF condition scope newlines else
+   22          | . ACCEPT
+   23          | . REJECTION
+   27 write: . %empty  [GO]
+   28      | . MARK ","
+   29      | . UNMARK ","
+   30      | . WRITE string reversal repetition ","
 
-    $default  reduce using rule 68 (condition)
+    IF         shift, and go to state 10
+    ACCEPT     shift, and go to state 11
+    REJECTION  shift, and go to state 12
+    WRITE      shift, and go to state 13
+    MARK       shift, and go to state 14
+    UNMARK     shift, and go to state 15
+
+    $default  reduce using rule 27 (write)
+
+    statement  go to state 70
+    write      go to state 17
 
 
 State 59
 
-   23 if_statements: IF . condition indent if_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
+   48 condition: condition OR IDENTIFIER .
 
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
-
-    condition  go to state 74
+    $default  reduce using rule 48 (condition)
 
 
 State 60
 
-   24 if_statements: ACCEPT . do_ors
-   46 do_ors: . dedent OR condition indent do_or_statements
-   47       | . dedent newlines statements
-   48       | . do_else
-   57 do_else: . dedent newlines ELSE indent do_else_statements
-   78 dedent: . DEDENT NEWLINE
+   47 condition: condition OR symbol .
 
-    DEDENT  shift, and go to state 23
-
-    do_ors   go to state 75
-    do_else  go to state 76
-    dedent   go to state 77
+    $default  reduce using rule 47 (condition)
 
 
 State 61
 
-   25 if_statements: REJECTION . do_ors
-   46 do_ors: . dedent OR condition indent do_or_statements
-   47       | . dedent newlines statements
-   48       | . do_else
-   57 do_else: . dedent newlines ELSE indent do_else_statements
-   78 dedent: . DEDENT NEWLINE
+   20 statement: . write travel transition
+   21          | . IF condition scope newlines else
+   21          | IF condition scope newlines . else
+   22          | . ACCEPT
+   23          | . REJECTION
+   24 else: . OR condition scope else
+   25     | . ELSE scope
+   26     | . statement
+   27 write: . %empty  [GO]
+   28      | . MARK ","
+   29      | . UNMARK ","
+   30      | . WRITE string reversal repetition ","
 
-    DEDENT  shift, and go to state 23
+    IF         shift, and go to state 10
+    OR         shift, and go to state 71
+    ELSE       shift, and go to state 72
+    ACCEPT     shift, and go to state 11
+    REJECTION  shift, and go to state 12
+    WRITE      shift, and go to state 13
+    MARK       shift, and go to state 14
+    UNMARK     shift, and go to state 15
 
-    do_ors   go to state 78
-    do_else  go to state 76
-    dedent   go to state 77
+    $default  reduce using rule 27 (write)
+
+    statement  go to state 73
+    else       go to state 74
+    write      go to state 17
 
 
 State 62
 
-   19 go: . GO direction until
-   22 if_statements: write . go if_do
+   41 repetition: NUMBER . TIMES
 
-    GO  shift, and go to state 33
-
-    go  go to state 79
+    TIMES  shift, and go to state 75
 
 
 State 63
 
-   10 statements: IF condition indent if_statements .
+   30 write: WRITE string reversal repetition . ","
 
-    $default  reduce using rule 10 (statements)
+    ","  shift, and go to state 76
 
 
 State 64
 
-   30 ors: dedent OR condition . indent or_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
+   11 block: IDENTIFIER ":" . scope
+   16 scope: . INDENT newlines statement optional_newlines DEDENT
 
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
+    INDENT  shift, and go to state 41
 
-    indent  go to state 80
+    scope  go to state 77
 
 
 State 65
 
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   38 else: dedent ELSE indent . else_statements
-   40 else_statements: . IF condition indent if_statements
-   41                | . write go else_do
-   42                | . ACCEPT dedent
-   43                | . REJECTION dedent
+   10 blocks: blocks block . newlines
+   17 newlines: . NEWLINE optional_newlines
 
-    IF         shift, and go to state 81
-    ACCEPT     shift, and go to state 82
-    REJECTION  shift, and go to state 83
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
+    NEWLINE  shift, and go to state 19
 
-    $default  reduce using rule 18 (write)
-
-    write            go to state 84
-    else_statements  go to state 85
+    newlines  go to state 78
 
 
 State 66
 
-   73 repetition: NUMBER .
+    9 blocks: block newlines .
 
-    $default  reduce using rule 73 (repetition)
+    $default  reduce using rule 9 (blocks)
 
 
 State 67
 
-   15 write: WRITE STRING reversal repetition . ","
+   31 travel: GO direction repetition . until
+   42 until: . %empty  [NEWLINE, ","]
+   43      | . UNTIL condition
 
-    ","  shift, and go to state 86
+    UNTIL  shift, and go to state 79
+
+    $default  reduce using rule 42 (until)
+
+    until  go to state 80
 
 
 State 68
 
-    9 block: IDENTIFIER . ":" indent statements
+   33 transition: "," DO . IDENTIFIER
 
-    ":"  shift, and go to state 87
+    IDENTIFIER  shift, and go to state 81
 
 
 State 69
 
-    7 blocks: blocks newlines1 block .
+   32 transition: newlines statement .
 
-    $default  reduce using rule 7 (blocks)
+    $default  reduce using rule 32 (transition)
 
 
 State 70
 
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
-   75 until: UNTIL . condition
+   16 scope: INDENT newlines statement . optional_newlines DEDENT
+   18 optional_newlines: . %empty
+   19                  | . optional_newlines NEWLINE
 
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
+    $default  reduce using rule 18 (optional_newlines)
 
-    condition  go to state 88
+    optional_newlines  go to state 82
 
 
 State 71
 
-   19 go: GO direction until .
+   14 symbol: . SYMBOL
+   15       | . MARKED SYMBOL
+   24 else: OR . condition scope else
+   44 condition: . symbol
+   45          | . MARKED
+   46          | . UNMARKED
+   47          | . condition OR symbol
+   48          | . condition OR IDENTIFIER
+   49          | . IDENTIFIER
 
-    $default  reduce using rule 19 (go)
+    MARKED      shift, and go to state 25
+    UNMARKED    shift, and go to state 26
+    IDENTIFIER  shift, and go to state 27
+    SYMBOL      shift, and go to state 22
+
+    symbol     go to state 28
+    condition  go to state 83
 
 
 State 72
 
-   20 do: "," DO . IDENTIFIER
+   16 scope: . INDENT newlines statement optional_newlines DEDENT
+   25 else: ELSE . scope
 
-    IDENTIFIER  shift, and go to state 89
+    INDENT  shift, and go to state 41
+
+    scope  go to state 84
 
 
 State 73
 
-   21 do: newlines1 statements .
+   26 else: statement .
 
-    $default  reduce using rule 21 (do)
+    $default  reduce using rule 26 (else)
 
 
 State 74
 
-   23 if_statements: IF condition . indent if_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
+   21 statement: IF condition scope newlines else .
 
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
-
-    indent  go to state 90
+    $default  reduce using rule 21 (statement)
 
 
 State 75
 
-   24 if_statements: ACCEPT do_ors .
+   41 repetition: NUMBER TIMES .
 
-    $default  reduce using rule 24 (if_statements)
+    $default  reduce using rule 41 (repetition)
 
 
 State 76
 
-   48 do_ors: do_else .
+   30 write: WRITE string reversal repetition "," .
 
-    $default  reduce using rule 48 (do_ors)
+    $default  reduce using rule 30 (write)
 
 
 State 77
 
-   46 do_ors: dedent . OR condition indent do_or_statements
-   47       | dedent . newlines statements
-   57 do_else: dedent . newlines ELSE indent do_else_statements
-   80 newlines: . %empty  [NEWLINE, IF, ELSE, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
-   81         | . newlines NEWLINE
+   11 block: IDENTIFIER ":" scope .
 
-    OR  shift, and go to state 91
-
-    $default  reduce using rule 80 (newlines)
-
-    newlines  go to state 92
+    $default  reduce using rule 11 (block)
 
 
 State 78
 
-   25 if_statements: REJECTION do_ors .
+   10 blocks: blocks block newlines .
 
-    $default  reduce using rule 25 (if_statements)
+    $default  reduce using rule 10 (blocks)
 
 
 State 79
 
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   22 if_statements: . write go if_do
-   22              | write go . if_do
-   23              | . IF condition indent if_statements
-   24              | . ACCEPT do_ors
-   25              | . REJECTION do_ors
-   26 if_do: . "," DO IDENTIFIER dedent statements
-   27      | . "," DO IDENTIFIER do_ors
-   28      | . if_statements
-   29      | . ors
-   30 ors: . dedent OR condition indent or_statements
-   31    | . else
-   38 else: . dedent ELSE indent else_statements
-   39     | . dedent statements
-   78 dedent: . DEDENT NEWLINE
+   14 symbol: . SYMBOL
+   15       | . MARKED SYMBOL
+   43 until: UNTIL . condition
+   44 condition: . symbol
+   45          | . MARKED
+   46          | . UNMARKED
+   47          | . condition OR symbol
+   48          | . condition OR IDENTIFIER
+   49          | . IDENTIFIER
 
-    DEDENT     shift, and go to state 23
-    IF         shift, and go to state 59
-    ACCEPT     shift, and go to state 60
-    REJECTION  shift, and go to state 61
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-    ","        shift, and go to state 93
+    MARKED      shift, and go to state 25
+    UNMARKED    shift, and go to state 26
+    IDENTIFIER  shift, and go to state 27
+    SYMBOL      shift, and go to state 22
 
-    $default  reduce using rule 18 (write)
-
-    write          go to state 62
-    if_statements  go to state 94
-    if_do          go to state 95
-    ors            go to state 96
-    else           go to state 25
-    dedent         go to state 26
+    symbol     go to state 28
+    condition  go to state 85
 
 
 State 80
 
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   30 ors: dedent OR condition indent . or_statements
-   32 or_statements: . IF condition indent if_statements
-   33              | . write go or_do
-   34              | . ACCEPT dedent
-   35              | . REJECTION dedent
+   31 travel: GO direction repetition until .
 
-    IF         shift, and go to state 97
-    ACCEPT     shift, and go to state 98
-    REJECTION  shift, and go to state 99
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write          go to state 100
-    or_statements  go to state 101
+    $default  reduce using rule 31 (travel)
 
 
 State 81
 
-   40 else_statements: IF . condition indent if_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
+   33 transition: "," DO IDENTIFIER .
 
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
-
-    condition  go to state 102
+    $default  reduce using rule 33 (transition)
 
 
 State 82
 
-   42 else_statements: ACCEPT . dedent
-   78 dedent: . DEDENT NEWLINE
+   16 scope: INDENT newlines statement optional_newlines . DEDENT
+   19 optional_newlines: optional_newlines . NEWLINE
 
-    DEDENT  shift, and go to state 23
-
-    dedent  go to state 103
+    DEDENT   shift, and go to state 86
+    NEWLINE  shift, and go to state 4
 
 
 State 83
 
-   43 else_statements: REJECTION . dedent
-   78 dedent: . DEDENT NEWLINE
+   16 scope: . INDENT newlines statement optional_newlines DEDENT
+   24 else: OR condition . scope else
+   47 condition: condition . OR symbol
+   48          | condition . OR IDENTIFIER
 
-    DEDENT  shift, and go to state 23
+    INDENT  shift, and go to state 41
+    OR      shift, and go to state 42
 
-    dedent  go to state 104
+    scope  go to state 87
 
 
 State 84
 
-   19 go: . GO direction until
-   41 else_statements: write . go else_do
+   25 else: ELSE scope .
 
-    GO  shift, and go to state 33
-
-    go  go to state 105
+    $default  reduce using rule 25 (else)
 
 
 State 85
 
-   38 else: dedent ELSE indent else_statements .
+   43 until: UNTIL condition .  [NEWLINE, ","]
+   47 condition: condition . OR symbol
+   48          | condition . OR IDENTIFIER
 
-    $default  reduce using rule 38 (else)
+    OR  shift, and go to state 42
+
+    $default  reduce using rule 43 (until)
 
 
 State 86
 
-   15 write: WRITE STRING reversal repetition "," .
+   16 scope: INDENT newlines statement optional_newlines DEDENT .
 
-    $default  reduce using rule 15 (write)
+    $default  reduce using rule 16 (scope)
 
 
 State 87
 
-    9 block: IDENTIFIER ":" . indent statements
-   77 indent: . INDENT newlines
+   20 statement: . write travel transition
+   21          | . IF condition scope newlines else
+   22          | . ACCEPT
+   23          | . REJECTION
+   24 else: . OR condition scope else
+   24     | OR condition scope . else
+   25     | . ELSE scope
+   26     | . statement
+   27 write: . %empty  [GO]
+   28      | . MARK ","
+   29      | . UNMARK ","
+   30      | . WRITE string reversal repetition ","
 
-    INDENT  shift, and go to state 38
+    IF         shift, and go to state 10
+    OR         shift, and go to state 71
+    ELSE       shift, and go to state 72
+    ACCEPT     shift, and go to state 11
+    REJECTION  shift, and go to state 12
+    WRITE      shift, and go to state 13
+    MARK       shift, and go to state 14
+    UNMARK     shift, and go to state 15
 
-    indent  go to state 106
+    $default  reduce using rule 27 (write)
+
+    statement  go to state 73
+    else       go to state 88
+    write      go to state 17
 
 
 State 88
 
-   68 condition: condition . OR SYMBOL
-   75 until: UNTIL condition .  [DEDENT, NEWLINE, IF, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK, ","]
+   24 else: OR condition scope else .
 
-    OR  shift, and go to state 39
-
-    $default  reduce using rule 75 (until)
-
-
-State 89
-
-   20 do: "," DO IDENTIFIER .
-
-    $default  reduce using rule 20 (do)
-
-
-State 90
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   22 if_statements: . write go if_do
-   23              | . IF condition indent if_statements
-   23              | IF condition indent . if_statements
-   24              | . ACCEPT do_ors
-   25              | . REJECTION do_ors
-
-    IF         shift, and go to state 59
-    ACCEPT     shift, and go to state 60
-    REJECTION  shift, and go to state 61
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write          go to state 62
-    if_statements  go to state 107
-
-
-State 91
-
-   46 do_ors: dedent OR . condition indent do_or_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
-
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
-
-    condition  go to state 108
-
-
-State 92
-
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   47 do_ors: dedent newlines . statements
-   57 do_else: dedent newlines . ELSE indent do_else_statements
-   81 newlines: newlines . NEWLINE
-
-    NEWLINE    shift, and go to state 55
-    IF         shift, and go to state 7
-    ELSE       shift, and go to state 109
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 110
-    write       go to state 14
-
-
-State 93
-
-   26 if_do: "," . DO IDENTIFIER dedent statements
-   27      | "," . DO IDENTIFIER do_ors
-
-    DO  shift, and go to state 111
-
-
-State 94
-
-   28 if_do: if_statements .
-
-    $default  reduce using rule 28 (if_do)
-
-
-State 95
-
-   22 if_statements: write go if_do .
-
-    $default  reduce using rule 22 (if_statements)
-
-
-State 96
-
-   29 if_do: ors .
-
-    $default  reduce using rule 29 (if_do)
-
-
-State 97
-
-   32 or_statements: IF . condition indent if_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
-
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
-
-    condition  go to state 112
-
-
-State 98
-
-   34 or_statements: ACCEPT . dedent
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    dedent  go to state 113
-
-
-State 99
-
-   35 or_statements: REJECTION . dedent
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    dedent  go to state 114
-
-
-State 100
-
-   19 go: . GO direction until
-   33 or_statements: write . go or_do
-
-    GO  shift, and go to state 33
-
-    go  go to state 115
-
-
-State 101
-
-   30 ors: dedent OR condition indent or_statements .
-
-    $default  reduce using rule 30 (ors)
-
-
-State 102
-
-   40 else_statements: IF condition . indent if_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
-
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
-
-    indent  go to state 116
-
-
-State 103
-
-   42 else_statements: ACCEPT dedent .
-
-    $default  reduce using rule 42 (else_statements)
-
-
-State 104
-
-   43 else_statements: REJECTION dedent .
-
-    $default  reduce using rule 43 (else_statements)
-
-
-State 105
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   40 else_statements: . IF condition indent if_statements
-   41                | . write go else_do
-   41                | write go . else_do
-   42                | . ACCEPT dedent
-   43                | . REJECTION dedent
-   44 else_do: . "," DO IDENTIFIER dedent statements
-   45        | . else_statements
-
-    IF         shift, and go to state 81
-    ACCEPT     shift, and go to state 82
-    REJECTION  shift, and go to state 83
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-    ","        shift, and go to state 117
-
-    $default  reduce using rule 18 (write)
-
-    write            go to state 84
-    else_statements  go to state 118
-    else_do          go to state 119
-
-
-State 106
-
-    9 block: IDENTIFIER ":" indent . statements
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-
-    IF         shift, and go to state 7
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 120
-    write       go to state 14
-
-
-State 107
-
-   23 if_statements: IF condition indent if_statements .
-
-    $default  reduce using rule 23 (if_statements)
-
-
-State 108
-
-   46 do_ors: dedent OR condition . indent do_or_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
-
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
-
-    indent  go to state 121
-
-
-State 109
-
-   57 do_else: dedent newlines ELSE . indent do_else_statements
-   77 indent: . INDENT newlines
-
-    INDENT  shift, and go to state 38
-
-    indent  go to state 122
-
-
-State 110
-
-   47 do_ors: dedent newlines statements .
-
-    $default  reduce using rule 47 (do_ors)
-
-
-State 111
-
-   26 if_do: "," DO . IDENTIFIER dedent statements
-   27      | "," DO . IDENTIFIER do_ors
-
-    IDENTIFIER  shift, and go to state 123
-
-
-State 112
-
-   32 or_statements: IF condition . indent if_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
-
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
-
-    indent  go to state 124
-
-
-State 113
-
-   34 or_statements: ACCEPT dedent .
-
-    $default  reduce using rule 34 (or_statements)
-
-
-State 114
-
-   35 or_statements: REJECTION dedent .
-
-    $default  reduce using rule 35 (or_statements)
-
-
-State 115
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   32 or_statements: . IF condition indent if_statements
-   33              | . write go or_do
-   33              | write go . or_do
-   34              | . ACCEPT dedent
-   35              | . REJECTION dedent
-   36 or_do: . "," DO IDENTIFIER dedent statements
-   37      | . or_statements
-
-    IF         shift, and go to state 97
-    ACCEPT     shift, and go to state 98
-    REJECTION  shift, and go to state 99
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-    ","        shift, and go to state 125
-
-    $default  reduce using rule 18 (write)
-
-    write          go to state 100
-    or_statements  go to state 126
-    or_do          go to state 127
-
-
-State 116
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   22 if_statements: . write go if_do
-   23              | . IF condition indent if_statements
-   24              | . ACCEPT do_ors
-   25              | . REJECTION do_ors
-   40 else_statements: IF condition indent . if_statements
-
-    IF         shift, and go to state 59
-    ACCEPT     shift, and go to state 60
-    REJECTION  shift, and go to state 61
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write          go to state 62
-    if_statements  go to state 128
-
-
-State 117
-
-   44 else_do: "," . DO IDENTIFIER dedent statements
-
-    DO  shift, and go to state 129
-
-
-State 118
-
-   45 else_do: else_statements .
-
-    $default  reduce using rule 45 (else_do)
-
-
-State 119
-
-   41 else_statements: write go else_do .
-
-    $default  reduce using rule 41 (else_statements)
-
-
-State 120
-
-    9 block: IDENTIFIER ":" indent statements .
-
-    $default  reduce using rule 9 (block)
-
-
-State 121
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   46 do_ors: dedent OR condition indent . do_or_statements
-   49 do_or_statements: . IF condition indent if_statements
-   50                 | . write go do_or_do
-   51                 | . ACCEPT do_else
-   52                 | . REJECTION do_else
-
-    IF         shift, and go to state 130
-    ACCEPT     shift, and go to state 131
-    REJECTION  shift, and go to state 132
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write             go to state 133
-    do_or_statements  go to state 134
-
-
-State 122
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   57 do_else: dedent newlines ELSE indent . do_else_statements
-   58 do_else_statements: . IF condition indent if_statements
-   59                   | . write go do_else_do
-   60                   | . ACCEPT DEDENT
-   61                   | . REJECTION DEDENT
-
-    IF         shift, and go to state 135
-    ACCEPT     shift, and go to state 136
-    REJECTION  shift, and go to state 137
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write               go to state 138
-    do_else_statements  go to state 139
-
-
-State 123
-
-   26 if_do: "," DO IDENTIFIER . dedent statements
-   27      | "," DO IDENTIFIER . do_ors
-   46 do_ors: . dedent OR condition indent do_or_statements
-   47       | . dedent newlines statements
-   48       | . do_else
-   57 do_else: . dedent newlines ELSE indent do_else_statements
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    do_ors   go to state 140
-    do_else  go to state 76
-    dedent   go to state 141
-
-
-State 124
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   22 if_statements: . write go if_do
-   23              | . IF condition indent if_statements
-   24              | . ACCEPT do_ors
-   25              | . REJECTION do_ors
-   32 or_statements: IF condition indent . if_statements
-
-    IF         shift, and go to state 59
-    ACCEPT     shift, and go to state 60
-    REJECTION  shift, and go to state 61
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write          go to state 62
-    if_statements  go to state 142
-
-
-State 125
-
-   36 or_do: "," . DO IDENTIFIER dedent statements
-
-    DO  shift, and go to state 143
-
-
-State 126
-
-   37 or_do: or_statements .
-
-    $default  reduce using rule 37 (or_do)
-
-
-State 127
-
-   33 or_statements: write go or_do .
-
-    $default  reduce using rule 33 (or_statements)
-
-
-State 128
-
-   40 else_statements: IF condition indent if_statements .
-
-    $default  reduce using rule 40 (else_statements)
-
-
-State 129
-
-   44 else_do: "," DO . IDENTIFIER dedent statements
-
-    IDENTIFIER  shift, and go to state 144
-
-
-State 130
-
-   49 do_or_statements: IF . condition indent if_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
-
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
-
-    condition  go to state 145
-
-
-State 131
-
-   51 do_or_statements: ACCEPT . do_else
-   57 do_else: . dedent newlines ELSE indent do_else_statements
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    do_else  go to state 146
-    dedent   go to state 147
-
-
-State 132
-
-   52 do_or_statements: REJECTION . do_else
-   57 do_else: . dedent newlines ELSE indent do_else_statements
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    do_else  go to state 148
-    dedent   go to state 147
-
-
-State 133
-
-   19 go: . GO direction until
-   50 do_or_statements: write . go do_or_do
-
-    GO  shift, and go to state 33
-
-    go  go to state 149
-
-
-State 134
-
-   46 do_ors: dedent OR condition indent do_or_statements .
-
-    $default  reduce using rule 46 (do_ors)
-
-
-State 135
-
-   58 do_else_statements: IF . condition indent if_statements
-   65 condition: . SYMBOL
-   66          | . MARKED
-   67          | . UNMARKED
-   68          | . condition OR SYMBOL
-
-    MARKED    shift, and go to state 19
-    UNMARKED  shift, and go to state 20
-    SYMBOL    shift, and go to state 21
-
-    condition  go to state 150
-
-
-State 136
-
-   60 do_else_statements: ACCEPT . DEDENT
-
-    DEDENT  shift, and go to state 151
-
-
-State 137
-
-   61 do_else_statements: REJECTION . DEDENT
-
-    DEDENT  shift, and go to state 152
-
-
-State 138
-
-   19 go: . GO direction until
-   59 do_else_statements: write . go do_else_do
-
-    GO  shift, and go to state 33
-
-    go  go to state 153
-
-
-State 139
-
-   57 do_else: dedent newlines ELSE indent do_else_statements .
-
-    $default  reduce using rule 57 (do_else)
-
-
-State 140
-
-   27 if_do: "," DO IDENTIFIER do_ors .
-
-    $default  reduce using rule 27 (if_do)
-
-
-State 141
-
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   26 if_do: "," DO IDENTIFIER dedent . statements
-   46 do_ors: dedent . OR condition indent do_or_statements
-   47       | dedent . newlines statements
-   57 do_else: dedent . newlines ELSE indent do_else_statements
-   80 newlines: . %empty  [NEWLINE, IF, ELSE, ACCEPT, REJECTION, WRITE, GO, MARK, UNMARK]
-   81         | . newlines NEWLINE
-
-    IF         shift, and go to state 7
-    OR         shift, and go to state 91
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    IF         [reduce using rule 80 (newlines)]
-    ACCEPT     [reduce using rule 80 (newlines)]
-    REJECTION  [reduce using rule 80 (newlines)]
-    WRITE      [reduce using rule 80 (newlines)]
-    GO         reduce using rule 18 (write)
-    GO         [reduce using rule 80 (newlines)]
-    MARK       [reduce using rule 80 (newlines)]
-    UNMARK     [reduce using rule 80 (newlines)]
-    $default   reduce using rule 80 (newlines)
-
-    statements  go to state 154
-    write       go to state 14
-    newlines    go to state 92
-
-
-State 142
-
-   32 or_statements: IF condition indent if_statements .
-
-    $default  reduce using rule 32 (or_statements)
-
-
-State 143
-
-   36 or_do: "," DO . IDENTIFIER dedent statements
-
-    IDENTIFIER  shift, and go to state 155
-
-
-State 144
-
-   44 else_do: "," DO IDENTIFIER . dedent statements
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    dedent  go to state 156
-
-
-State 145
-
-   49 do_or_statements: IF condition . indent if_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
-
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
-
-    indent  go to state 157
-
-
-State 146
-
-   51 do_or_statements: ACCEPT do_else .
-
-    $default  reduce using rule 51 (do_or_statements)
-
-
-State 147
-
-   57 do_else: dedent . newlines ELSE indent do_else_statements
-   80 newlines: . %empty
-   81         | . newlines NEWLINE
-
-    $default  reduce using rule 80 (newlines)
-
-    newlines  go to state 158
-
-
-State 148
-
-   52 do_or_statements: REJECTION do_else .
-
-    $default  reduce using rule 52 (do_or_statements)
-
-
-State 149
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   49 do_or_statements: . IF condition indent if_statements
-   50                 | . write go do_or_do
-   50                 | write go . do_or_do
-   51                 | . ACCEPT do_else
-   52                 | . REJECTION do_else
-   53 do_or_do: . "," DO IDENTIFIER dedent
-   54         | . "," DO IDENTIFIER do_else
-   55         | . do_or_statements
-   56         | . dedent statements
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT     shift, and go to state 23
-    IF         shift, and go to state 130
-    ACCEPT     shift, and go to state 131
-    REJECTION  shift, and go to state 132
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-    ","        shift, and go to state 159
-
-    $default  reduce using rule 18 (write)
-
-    write             go to state 133
-    do_or_statements  go to state 160
-    do_or_do          go to state 161
-    dedent            go to state 162
-
-
-State 150
-
-   58 do_else_statements: IF condition . indent if_statements
-   68 condition: condition . OR SYMBOL
-   77 indent: . INDENT newlines
-
-    INDENT  shift, and go to state 38
-    OR      shift, and go to state 39
-
-    indent  go to state 163
-
-
-State 151
-
-   60 do_else_statements: ACCEPT DEDENT .
-
-    $default  reduce using rule 60 (do_else_statements)
-
-
-State 152
-
-   61 do_else_statements: REJECTION DEDENT .
-
-    $default  reduce using rule 61 (do_else_statements)
-
-
-State 153
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   58 do_else_statements: . IF condition indent if_statements
-   59                   | . write go do_else_do
-   59                   | write go . do_else_do
-   60                   | . ACCEPT DEDENT
-   61                   | . REJECTION DEDENT
-   62 do_else_do: . "," DO IDENTIFIER DEDENT DEDENT
-   63           | . do_else_statements
-   64           | . DEDENT statements
-
-    DEDENT     shift, and go to state 164
-    IF         shift, and go to state 135
-    ACCEPT     shift, and go to state 136
-    REJECTION  shift, and go to state 137
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-    ","        shift, and go to state 165
-
-    $default  reduce using rule 18 (write)
-
-    write               go to state 138
-    do_else_statements  go to state 166
-    do_else_do          go to state 167
-
-
-State 154
-
-   26 if_do: "," DO IDENTIFIER dedent statements .
-
-    $default  reduce using rule 26 (if_do)
-
-
-State 155
-
-   36 or_do: "," DO IDENTIFIER . dedent statements
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    dedent  go to state 168
-
-
-State 156
-
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   44 else_do: "," DO IDENTIFIER dedent . statements
-
-    IF         shift, and go to state 7
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 169
-    write       go to state 14
-
-
-State 157
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   22 if_statements: . write go if_do
-   23              | . IF condition indent if_statements
-   24              | . ACCEPT do_ors
-   25              | . REJECTION do_ors
-   49 do_or_statements: IF condition indent . if_statements
-
-    IF         shift, and go to state 59
-    ACCEPT     shift, and go to state 60
-    REJECTION  shift, and go to state 61
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write          go to state 62
-    if_statements  go to state 170
-
-
-State 158
-
-   57 do_else: dedent newlines . ELSE indent do_else_statements
-   81 newlines: newlines . NEWLINE
-
-    NEWLINE  shift, and go to state 55
-    ELSE     shift, and go to state 109
-
-
-State 159
-
-   53 do_or_do: "," . DO IDENTIFIER dedent
-   54         | "," . DO IDENTIFIER do_else
-
-    DO  shift, and go to state 171
-
-
-State 160
-
-   55 do_or_do: do_or_statements .
-
-    $default  reduce using rule 55 (do_or_do)
-
-
-State 161
-
-   50 do_or_statements: write go do_or_do .
-
-    $default  reduce using rule 50 (do_or_statements)
-
-
-State 162
-
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   56 do_or_do: dedent . statements
-
-    IF         shift, and go to state 7
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 172
-    write       go to state 14
-
-
-State 163
-
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   22 if_statements: . write go if_do
-   23              | . IF condition indent if_statements
-   24              | . ACCEPT do_ors
-   25              | . REJECTION do_ors
-   58 do_else_statements: IF condition indent . if_statements
-
-    IF         shift, and go to state 59
-    ACCEPT     shift, and go to state 60
-    REJECTION  shift, and go to state 61
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    write          go to state 62
-    if_statements  go to state 173
-
-
-State 164
-
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   64 do_else_do: DEDENT . statements
-
-    IF         shift, and go to state 7
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 174
-    write       go to state 14
-
-
-State 165
-
-   62 do_else_do: "," . DO IDENTIFIER DEDENT DEDENT
-
-    DO  shift, and go to state 175
-
-
-State 166
-
-   63 do_else_do: do_else_statements .
-
-    $default  reduce using rule 63 (do_else_do)
-
-
-State 167
-
-   59 do_else_statements: write go do_else_do .
-
-    $default  reduce using rule 59 (do_else_statements)
-
-
-State 168
-
-   10 statements: . IF condition indent if_statements
-   11           | . write go do
-   12           | . ACCEPT ors
-   13           | . REJECTION ors
-   14 write: . WRITE SYMBOL ","
-   15      | . WRITE STRING reversal repetition ","
-   16      | . MARK ","
-   17      | . UNMARK ","
-   18      | . %empty  [GO]
-   36 or_do: "," DO IDENTIFIER dedent . statements
-
-    IF         shift, and go to state 7
-    ACCEPT     shift, and go to state 8
-    REJECTION  shift, and go to state 9
-    WRITE      shift, and go to state 10
-    MARK       shift, and go to state 11
-    UNMARK     shift, and go to state 12
-
-    $default  reduce using rule 18 (write)
-
-    statements  go to state 176
-    write       go to state 14
-
-
-State 169
-
-   44 else_do: "," DO IDENTIFIER dedent statements .
-
-    $default  reduce using rule 44 (else_do)
-
-
-State 170
-
-   49 do_or_statements: IF condition indent if_statements .
-
-    $default  reduce using rule 49 (do_or_statements)
-
-
-State 171
-
-   53 do_or_do: "," DO . IDENTIFIER dedent
-   54         | "," DO . IDENTIFIER do_else
-
-    IDENTIFIER  shift, and go to state 177
-
-
-State 172
-
-   56 do_or_do: dedent statements .
-
-    $default  reduce using rule 56 (do_or_do)
-
-
-State 173
-
-   58 do_else_statements: IF condition indent if_statements .
-
-    $default  reduce using rule 58 (do_else_statements)
-
-
-State 174
-
-   64 do_else_do: DEDENT statements .
-
-    $default  reduce using rule 64 (do_else_do)
-
-
-State 175
-
-   62 do_else_do: "," DO . IDENTIFIER DEDENT DEDENT
-
-    IDENTIFIER  shift, and go to state 178
-
-
-State 176
-
-   36 or_do: "," DO IDENTIFIER dedent statements .
-
-    $default  reduce using rule 36 (or_do)
-
-
-State 177
-
-   53 do_or_do: "," DO IDENTIFIER . dedent
-   54         | "," DO IDENTIFIER . do_else
-   57 do_else: . dedent newlines ELSE indent do_else_statements
-   78 dedent: . DEDENT NEWLINE
-
-    DEDENT  shift, and go to state 23
-
-    do_else  go to state 179
-    dedent   go to state 180
-
-
-State 178
-
-   62 do_else_do: "," DO IDENTIFIER . DEDENT DEDENT
-
-    DEDENT  shift, and go to state 181
-
-
-State 179
-
-   54 do_or_do: "," DO IDENTIFIER do_else .
-
-    $default  reduce using rule 54 (do_or_do)
-
-
-State 180
-
-   53 do_or_do: "," DO IDENTIFIER dedent .  [$end, NEWLINE]
-   57 do_else: dedent . newlines ELSE indent do_else_statements
-   80 newlines: . %empty  [NEWLINE, ELSE]
-   81         | . newlines NEWLINE
-
-    NEWLINE   reduce using rule 53 (do_or_do)
-    NEWLINE   [reduce using rule 80 (newlines)]
-    ELSE      reduce using rule 80 (newlines)
-    $default  reduce using rule 53 (do_or_do)
-
-    newlines  go to state 158
-
-
-State 181
-
-   62 do_else_do: "," DO IDENTIFIER DEDENT . DEDENT
-
-    DEDENT  shift, and go to state 182
-
-
-State 182
-
-   62 do_else_do: "," DO IDENTIFIER DEDENT DEDENT .
-
-    $default  reduce using rule 62 (do_else_do)
+    $default  reduce using rule 24 (else)

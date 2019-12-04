@@ -47,7 +47,7 @@
 %locations
 %define parse.error verbose
 
-%token INDENT UNINDENT NEWLINE
+%token INDENT DEDENT NEWLINE
 %token IF OR ELSE
 %token ACCEPT REJECTION
 %token WRITE GO DO
@@ -55,6 +55,7 @@
 %token LEFT RIGHT
 %token UNTIL TIMES BACKWARDS
 %token GROUPS BLOCKS
+%token END
 
 %token <identifier> IDENTIFIER
 %token <symbol>     SYMBOL
@@ -81,47 +82,64 @@
 %%
 
 program:
-    groups blocks statement         {
-                                        list_t* node = blocks;
-                                        
-                                        while (node != NULL) {
-                                            statement_t** reference = node -> value;
-                                            
-                                            if (reference == NULL || *reference == NULL)
-                                                yyerror("undefined block");
+    optional_newlines
+    optional_groups
+    statement
+    optional_newlines 
+    optional_blocks
+    {
+        list_t* node = blocks;
+        
+        while (node != NULL) {
+            statement_t** reference = node -> value;
+            
+            if (reference == NULL || *reference == NULL)
+                yyerror("undefined block");
 
-                                            node = node -> next;
-                                        }
+            node = node -> next;
+        }
 
-                                        program = $3;
-                                    }
+        program = $statement;
+    }
+    ;
+
+optional_groups:
+    %empty
+    | groups
     ;
 
 groups: 
-    GROUPS newlines                         {}
-    | groups  group newlines       {}
+    group newlines          {}
+    | groups group newlines {}
+    ;
+
+
+group: 
+    IDENTIFIER "=" symbols  {groups = push($1, $3, groups);}
+    ;
+
+optional_blocks:
+    %empty
+    | blocks
     ;
 
 blocks: 
-    BLOCKS newlines                         {}
-    | blocks  block newlines    {}
+    block newlines          {}
+    | blocks block newlines {}
     ; 
 
-group: 
-    IDENTIFIER "=" symbols          {groups = push($1, $3, groups);}
-    ;
-
 block: 
-    IDENTIFIER ":" scope            {
-                                        statement_t** reference = find($1, blocks);
+    IDENTIFIER ":" scope
+    {
+        statement_t** reference = find($1, blocks);
 
-                                        if (reference == NULL) {
-                                            reference = malloc(sizeof(statement_t*));
-                                            blocks = push($1, reference, blocks);
-                                        }
+        if (reference == NULL) {
+            reference = malloc(sizeof(statement_t*));
+            blocks = push($1, reference, blocks);
+        }
 
-                                        *reference = $3;
-                                    }
+        *reference = $3;
+    }
     ;
 
 symbols: 
@@ -135,24 +153,22 @@ symbol:
     ;
 
 scope: 
-    INDENT newlines statement optional_newlines UNINDENT {$$ = $3;}
-    ;
-
-optional_newlines:
-    %empty
-    | newlines
+    INDENT newlines statement optional_newlines DEDENT {$$ = $statement;}
     ;
 
 newlines:
-    NEWLINE
-    | newlines NEWLINE
+    NEWLINE optional_newlines
+
+optional_newlines:
+    %empty                      {}
+    | optional_newlines NEWLINE {}
     ;
 
 statement:
-    write travel transition         {$$ = operation($1, $2, $3);}
-    | IF condition scope newlines else   {$$ = conditional($2, $3, $5);}
-    | ACCEPT                        {$$ = accept();}
-    | REJECTION                     {$$ = reject();}
+    write travel transition             {$$ = operation($1, $2, $3);}
+    | IF condition scope newlines else  {$$ = conditional($2, $3, $5);}
+    | ACCEPT                            {$$ = accept();}
+    | REJECTION                         {$$ = reject();}
     ;
 
 else: 
@@ -174,17 +190,18 @@ travel:
 
 transition: 
     newlines statement               {$$ = &$2;}
-    | COMMA DO IDENTIFIER           {
-                                        statement_t** reference = find($3, blocks);
+    | COMMA DO IDENTIFIER
+    {
+        statement_t** reference = find($3, blocks);
 
-                                        if (reference == NULL) {
-                                            reference = malloc(sizeof(statement_t*));
-                                            *reference = NULL;
-                                            blocks = push($3, reference, blocks);
-                                        }
+        if (reference == NULL) {
+            reference = malloc(sizeof(statement_t*));
+            *reference = NULL;
+            blocks = push($3, reference, blocks);
+        }
 
-                                        $$ = reference;
-                                    }
+        $$ = reference;
+    }
     ;
 
 direction: 
@@ -193,15 +210,17 @@ direction:
     ;
 
 string: 
-    string SYMBOL                   {
-                                        buffer[n++] = $2;
-                                        buffer[n] = '\0';
-                                    }
-    | SYMBOL                        {
-                                        n = 0;
-                                        buffer[n++] = $1;
-                                        buffer[n] = '\0';                                        
-                                    }
+    string SYMBOL
+    {
+        buffer[n++] = $2;
+        buffer[n] = '\0';
+    }
+    | SYMBOL
+    {
+        n = 0;
+        buffer[n++] = $1;
+        buffer[n] = '\0';                                        
+    }
     ;
 
 reversal: 
@@ -224,24 +243,26 @@ condition:
     | MARKED                        {$$ = marked();}
     | UNMARKED                      {$$ = unmarked();}
     | condition OR symbol           {$$ = join($1, $3);}
-    | condition OR IDENTIFIER       {
-                                        condition_t* group = find($3, groups);
+    | condition OR IDENTIFIER
+    {
+        condition_t* group = find($3, groups);
 
-                                        if (group != NULL)
-                                            $$ = join($1, group);
+        if (group != NULL)
+            $$ = join($1, group);
 
-                                        else
-                                            yyerror("couldnt find group");
-                                    }
-    | IDENTIFIER                    {
-                                        condition_t* group = find($1, groups);
+        else
+            yyerror("couldnt find group");
+    }
+    | IDENTIFIER
+    {
+        condition_t* group = find($1, groups);
 
-                                        if (group != NULL)
-                                            $$ = group;
+        if (group != NULL)
+            $$ = group;
 
-                                        else
-                                            yyerror("couldnt find group");
-                                    }
+        else
+            yyerror("couldnt find group");
+    }
     ;    
 
 %%
