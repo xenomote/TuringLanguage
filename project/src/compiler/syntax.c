@@ -72,7 +72,7 @@ statement_t* reject() {
     return reject;
 }
 
-statement_t* conditional(condition_t* condition) {
+statement_t* conditional(condition_t* condition, statement_t* success, statement_t* failure) {
     statement_t* statement = malloc(sizeof(statement_t));
     conditional_t* conditional = malloc(sizeof(conditional_t));
 
@@ -80,6 +80,8 @@ statement_t* conditional(condition_t* condition) {
     statement -> conditional = conditional;
 
     conditional -> condition = condition;
+    conditional -> success = success;
+    conditional -> failure = failure;
 
     return statement;
 }
