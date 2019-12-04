@@ -64,15 +64,12 @@
 "times"                     return TIMES;
 "backwards"                 return BACKWARDS;
 
-"#groups"                   return GROUPS;
-"#blocks"                   return BLOCKS;
-
 "."[1-9][[:digit:]]*        return NUMBER;
 [[:alpha:]]+[[:alnum:]]+    return IDENTIFIER;
 [[:graph:]]                 return SYMBOL;
 
 <COMMENT>[^*]               // skip comment body
-<COMMENT>"*"                // skip single *
+<COMMENT>"*"                // skip single asterix
 <COMMENT>"*/"               BEGIN (INITIAL); // end multiline comment
 
 <SCOPE>" "                  spaces++; // increase the indent

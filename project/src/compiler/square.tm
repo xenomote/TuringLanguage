@@ -1,13 +1,9 @@
-
-gollum = a
-mm = a
-
-
 if _
     reject
-go right until 0
+go right until 0 
 mark, go right, do first
 
+/*
 first:
     go right until 0 or _
     if _
@@ -22,17 +18,6 @@ cross:
     go right until 0 or _
     if _
         reject
-    else
+    else 
         write X, go right, do cross
-
-
-
-
-
-
-
-
-
-
-
-
+*/

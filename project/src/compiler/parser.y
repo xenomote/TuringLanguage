@@ -54,7 +54,6 @@
 %token MARK UNMARK MARKED UNMARKED
 %token LEFT RIGHT
 %token UNTIL TIMES BACKWARDS
-%token GROUPS BLOCKS
 %token END
 
 %token <identifier> IDENTIFIER
