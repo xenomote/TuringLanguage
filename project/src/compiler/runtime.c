@@ -5,6 +5,9 @@
 #include <getopt.h>
 
 #include "runtime.h"
+#include "syntax.h"
+
+extern machine_t* machine;
 
 bool debug = false;
 
@@ -30,21 +33,60 @@ int main(int argc, char** argv)
     }
 
     tape_t* tape;
-    history_t* history;
-    configuration_t* configuration;
+    configuration_t* initial;
 
     if (strncmp(tape_file, "", 1) != 0) {
         tape = load_tape(tape_file);
     }
 
-    history = empty_history();
+    initial = starting_configuration();
 
-    configuration = starting_configuration(tape, history);
-
-    simulate(configuration);
+    simulate(initial, tape, MAX_STEPS);
 }
 
-void simulate(configuration_t* configuration)
+void simulate(configuration_t* initial, tape_t* tape, int max_steps)
 {
+    int instances_length = 0;
+    // configuration_t* instances[MAX_INSTANCES];
+
+    // instances[instances_length++] = initial;
+
+    configuration_t* instance = initial;
+
+    bool stop = false;
+    int steps = 0;
     
+    while (!stop && steps < max_steps) {
+        stop = true;
+
+        configuration_t* next = step(instance, tape);
+
+        if (next != NULL) {
+            instance = next;
+            steps++;
+        }
+
+        else stop &= true;
+
+    }
+}
+
+configuration_t* step(configuration_t* instance, tape_t* tape)
+{
+    int position = instance -> position;
+    int state = instance -> state;
+    char symbol = symbol_at(tape, position);
+
+    action_t* update = action(machine, state, symbol);
+    set_symbol(tape, instance -> position, update -> symbol);
+
+    if (halts(machine, update -> state)) return NULL;
+
+    configuration_t* next = malloc(sizeof(configuration_t));
+    next -> previous = instance;
+    next -> state = update -> state;
+    next -> position = instance -> position
+        + (update -> direction = RIGHT_D) ? 1 : (instance -> position = 0) ? 0 : -1;
+
+    return next;
 }

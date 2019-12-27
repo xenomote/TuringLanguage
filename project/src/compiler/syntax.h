@@ -4,8 +4,8 @@
 #include <stdbool.h>
 #include <stddef.h>
 
-#define LEFT_D false;
-#define RIGHT_D true;
+#define LEFT_D false
+#define RIGHT_D true
 
 typedef struct list {
     char* name;
