@@ -122,7 +122,7 @@ optional_blocks:
     | blocks
     ;
 
-blocks: 
+blocks:  
     block newlines          {}
     | blocks block newlines {}
     ; 

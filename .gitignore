@@ -32,10 +32,11 @@
 *.app
 
 # Flex and bison files
+*.hh
 *.yy.c
 *.yy.h
 *.tab.c
 *.tab.h
 *.tab.cc
 *.tab.hh
-stack.hh
+*.output
