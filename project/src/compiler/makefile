@@ -1,11 +1,47 @@
-all: lex.yy.c lex.yy.h parser.tab.c parser.tab.h syntax.c syntax.h
-	gcc lex.yy.c lex.yy.h parser.tab.c parser.tab.h syntax.c syntax.h -lfl -g -o compiler.out
+CXX=g++
+CXXFLAGS=-std=c++17 -Wall -Wextra -g
+LINK.o=$(LINK.cc)
 
-parser.tab.c parser.tab.h: parser.y
-	bison -d parser.y -W -v -r all
+YACC=bison
+YFLAGS=
 
-lex.yy.c lex.yy.h: lexer.l parser.tab.h
-	flex --header-file=lex.yy.h lexer.l
+LEX=flex
+LFLAGS=
+
+OBJECTS=main.o compiler.o lexer.o parser.o
+
+#DEPENDENCIES
+
+compiler: $(OBJECTS)
+
+main.o: parser.yy.hh
+
+compiler.o: compiler.hh parser.hh lexer.hh
+
+parser.o: parser.hh lexer.hh
+
+lexer.o: lexer.hh parser.yy.hh
+
+#CLEANUP
 
 clean:
-	rm lex.yy.c lex.yy.h parser.tab.c parser.tab.h parser.tab.cc parser.tab.hh stack.hh parser lexer
+	rm compiler stack.hh position.hh location.hh *.yy.* *.ll.* *.o *.gch
+
+#PATTERNS
+
+%.yy:
+%.ll:
+
+%.ll.cc: %.ll
+	$(LEX) $(LFLAGS) -o $*.ll.cc $< 
+%.yy.cc %.yy.hh: %.yy
+	$(YACC) $(YFLAGS) --defines=$*.yy.hh -o $*.yy.cc $<
+
+%.o: %.yy.cc
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o: %.ll.cc
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+%.o: %.cc
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
