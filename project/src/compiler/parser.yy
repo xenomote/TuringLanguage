@@ -33,7 +33,7 @@
 
     Statement* program;
 
-    std::map<std::string, Condition*> groups;
+    std::map<std::string, std::list<Symbol*>*> groups;
     std::map<std::string, std::pair<Statement**, yy::Parser::location_type>> blocks;
 
 }
@@ -57,10 +57,12 @@
 %token COLON        ":"
 
 %type <Statement*> program statement scope else
-%type <Condition*> condition until symbol symbols
+%type <Condition*> condition until group_ref
+%type <std::list<Symbol*>*> symbols
+%type <Symbol*> symbol
 %type <Write*> write
 %type <Travel*> travel
-%type <Statement**> transition
+%type <Statement**> transition block_ref
 %type <int> repetition
 %type <Direction> direction reversal
 %type <std::string> string
@@ -97,51 +99,84 @@ optional_groups:
     | groups
     ;
 
-groups: 
-    group newlines          {}
-    | groups group newlines {}
-    ;
-
-
-group: 
-    IDENTIFIER "=" symbols {groups.insert({$IDENTIFIER, $symbols});}
-    ;
-
 optional_blocks:
     %empty
     | blocks
     ;
 
-blocks:  
-    block newlines          {}
-    | blocks block newlines {}
-    ; 
+groups: 
+    group newlines
+    | groups group newlines
+    ;
+
+group: 
+    IDENTIFIER "=" symbols
+    {
+        auto reference = groups.find($IDENTIFIER);
+        
+        // if it does not already exist
+        if (reference == groups.end()) {
+            groups.insert({$IDENTIFIER, $symbols});
+        }
+
+        // if it already exists
+        else {
+            error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
+        }
+    }
+    ;
 
 block: 
     IDENTIFIER ":" scope
     {
         auto reference = blocks.find($IDENTIFIER);
 
+        // if it does not already exist
         if (reference == blocks.end()) {
             blocks.insert({$IDENTIFIER, {&$scope, @IDENTIFIER}});
         }
 
+        // if it has already been defined
         else if ((reference -> second).first != nullptr) {
             error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
         }
 
+        // if it has never been defined
         else reference -> second = {&$scope, @IDENTIFIER};
     }
     ;
 
+blocks:  
+    block newlines
+    | blocks block newlines
+    ; 
+
 symbols: 
-    symbols "," symbol              {}
-    | symbol                        {}
+    symbol
+    {
+        $$ = new std::list<Symbol*>();
+        $$ -> push_back($symbol);
+    }
+    | symbols[list] "," symbol
+    {
+        $list -> push_back($symbol);
+        $$ = $list;
+    }
     ;
 
 symbol: 
-    SYMBOL                          {}
-    | MARKED SYMBOL                 {}
+    SYMBOL          
+    {
+        $$ = new Symbol;
+        $$ -> type = Symbol::type::unmarked;
+        $$ -> symbol = $SYMBOL;
+    }
+    | MARKED SYMBOL
+    {
+        $$ = new Symbol;
+        $$ -> type = Symbol::type::marked;
+        $$ -> symbol = $SYMBOL;
+    }
     ;
 
 scope: 
@@ -150,10 +185,11 @@ scope:
 
 newlines:
     NEWLINE optional_newlines
+    ;
 
 optional_newlines:
-    %empty                      {}
-    | optional_newlines NEWLINE {}
+    %empty
+    | optional_newlines NEWLINE
     ;
 
 statement:
@@ -164,9 +200,9 @@ statement:
     ;
 
 else: 
-    OR condition scope else         {$$ = new Statement();}
-    | ELSE scope                    {$$ = $scope;}
-    | statement                     {$$ = $statement;}
+    OR condition scope else {$$ = new Statement();}
+    | ELSE scope            {$$ = $scope;}
+    | statement             {$$ = $statement;}
     ;
 
 write: 
@@ -181,8 +217,46 @@ travel:
     ;
 
 transition: 
-    newlines statement               {$$ = &$statement;}
-    | COMMA DO IDENTIFIER
+    newlines statement      {$$ = & $statement;}
+    | COMMA DO block_ref    {$$ = $block_ref;}
+    ;
+
+direction: 
+    LEFT    {$$ = left;}
+    | RIGHT {$$ = right;}
+    ;
+
+string: 
+    string SYMBOL   {buffer += $SYMBOL;}
+    | SYMBOL        {buffer = $SYMBOL;}
+    ;
+
+reversal: 
+    %empty      {$$ = left;}
+    | BACKWARDS {$$ = right;}
+    ;
+
+repetition: 
+    %empty          {$$ = 1;}
+    |  NUMBER TIMES {$$ = $TIMES;}
+    ;
+
+until: 
+    %empty              {$$ = nullptr;}
+    | UNTIL condition   {$$ = $condition;}
+    ;
+
+condition:
+    symbol
+    | group_ref
+    | MARKED                    {$$ = new Condition();}
+    | UNMARKED                  {$$ = new Condition();}
+    | condition OR symbol       {$$ = new Condition();}
+    | condition OR group_ref    {$$ = new Condition();}
+    ;
+
+block_ref:
+    IDENTIFIER
     {
         auto reference = blocks.find($IDENTIFIER);
 
@@ -194,59 +268,17 @@ transition:
     }
     ;
 
-direction: 
-    LEFT                            {$$ = left;}
-    | RIGHT                         {$$ = right;}
-    ;
-
-string: 
-    string SYMBOL   {buffer += $SYMBOL;}
-    | SYMBOL        {buffer = $SYMBOL;}
-    ;
-
-reversal: 
-    %empty                          {$$ = left;}
-    | BACKWARDS                     {$$ = right;}
-    ;
-
-repetition: 
-    %empty                          {$$ = 1;}
-    |  NUMBER TIMES                 {$$ = $TIMES;}
-    ;
-
-until: 
-    %empty                          {$$ = nullptr;}
-    | UNTIL condition               {$$ = $condition;}
-    ;
-
-condition:
-    symbol                          {$$ = $symbol;}
-    | MARKED                        {$$ = new Condition();}
-    | UNMARKED                      {$$ = new Condition();}
-    | condition OR symbol           {$$ = new Condition();}
-    | condition OR IDENTIFIER 
+group_ref:
+    IDENTIFIER
     {
         auto group = groups.find($IDENTIFIER);
 
         if (group != groups.end())
-            //$$ = join($1, group);
-            ;
+            $$ = new Condition();
 
-        else
-            Parser::error(@IDENTIFIER, "couldnt find group");
+        else Parser::error(@IDENTIFIER, "couldnt find group");
     }
-    | IDENTIFIER
-    {
-        auto group = groups.find($IDENTIFIER);
-
-        if (group != groups.end())
-            //$$ = join($1, group);
-            ;
-
-        else
-            Parser::error(@IDENTIFIER, "couldnt find group");
-    }
-    ;    
+    ;
 
 %%
 

@@ -6,6 +6,7 @@
 struct Statement;
 struct Conditional;
 struct Condition;
+struct Symbol;
 struct Operation;
 struct Write;
 struct Travel;
@@ -30,17 +31,16 @@ struct Conditional {
     Statement* failure;
 };
 
-
-struct Condition {
+struct Condition {};
+struct Marked : Condition {};
+struct Unmarked : Condition {};
+struct Symbol : Condition {
     enum struct type {
         marked,
-        unmarked,
-        marked_symbol,
-        unmarked_symbol,
+        unmarked
     } type;
 
     char symbol;
-    Condition* next;
 };
 
 struct Operation {
