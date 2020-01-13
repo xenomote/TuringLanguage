@@ -1,5 +1,5 @@
 CXX=g++
-CXXFLAGS=-std=c++17 -Wall -Wextra -g
+CXXFLAGS=-std=c++17 -Wall -Wextra -g -fmax-errors=5
 LINK.o=$(LINK.cc)
 
 YACC=bison
@@ -34,6 +34,7 @@ clean:
 
 %.ll.cc: %.ll
 	$(LEX) $(LFLAGS) -o $*.ll.cc $< 
+
 %.yy.cc %.yy.hh: %.yy
 	$(YACC) $(YFLAGS) --defines=$*.yy.hh -o $*.yy.cc $<
 

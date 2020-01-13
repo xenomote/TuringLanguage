@@ -40,3 +40,6 @@ stack.hh
 
 #vscode configurations
 .vscode
+
+#output file
+compiler

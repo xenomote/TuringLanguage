@@ -9,7 +9,7 @@ first:
         accept
     else
         write X, go right, do cross
-
+  accept
 cross:
     go right until 0 or _
     if _

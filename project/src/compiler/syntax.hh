@@ -19,10 +19,8 @@ struct Statement {
         operation
     } type;
 
-    union {
-        Conditional* conditional;
-        Operation* operation;
-    };
+    Conditional* conditional;
+    Operation* operation;
 };
 
 struct Conditional {
@@ -31,10 +29,17 @@ struct Conditional {
     Statement* failure;
 };
 
-struct Condition {};
-struct Marked : Condition {};
-struct Unmarked : Condition {};
-struct Symbol : Condition {
+struct Condition {
+    enum struct type {
+        symbols,
+        marked,
+        unmarked
+    } type;
+
+    std::list<Symbol*> symbols;
+};
+
+struct Symbol {
     enum struct type {
         marked,
         unmarked
@@ -51,12 +56,12 @@ struct Operation {
 
 struct Write {
     enum struct type {
-        replace,
+        write,
         mark,
         unmark
     } type;
 
-    char* string;
+    std::string string;
     bool reversed;
     int repetition;
 };

@@ -58,8 +58,12 @@
 
 %type <Statement*> program statement scope else
 %type <Condition*> condition until group_ref
+%type <Conditional*> conditional
+%type <Operation*> operation
+
 %type <std::list<Symbol*>*> symbols
 %type <Symbol*> symbol
+
 %type <Write*> write
 %type <Travel*> travel
 %type <Statement**> transition block_ref
@@ -85,7 +89,7 @@ program:
         for (const auto& [name, value] : blocks) {
             const auto& [reference, location] = value;
             if (reference == nullptr) {
-                error(location, "unsatisfied reference to \"" + name + "\"");
+                throw syntax_error(location, "unsatisfied reference to \"" + name + "\"");
             }
                 
         }
@@ -121,7 +125,7 @@ group:
 
         // if it already exists
         else {
-            error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
+            throw syntax_error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
         }
     }
     ;
@@ -138,7 +142,7 @@ block:
 
         // if it has already been defined
         else if ((reference -> second).first != nullptr) {
-            error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
+            throw syntax_error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
         }
 
         // if it has never been defined
@@ -165,18 +169,8 @@ symbols:
     ;
 
 symbol: 
-    SYMBOL          
-    {
-        $$ = new Symbol;
-        $$ -> type = Symbol::type::unmarked;
-        $$ -> symbol = $SYMBOL;
-    }
-    | MARKED SYMBOL
-    {
-        $$ = new Symbol;
-        $$ -> type = Symbol::type::marked;
-        $$ -> symbol = $SYMBOL;
-    }
+    SYMBOL          {$$ = new Symbol {Symbol::type::unmarked, $SYMBOL};}
+    | MARKED SYMBOL {$$ = new Symbol {Symbol::type::marked, $SYMBOL};}
     ;
 
 scope: 
@@ -193,23 +187,31 @@ optional_newlines:
     ;
 
 statement:
-    write travel transition            {$$ = new Statement();}
-    | IF condition scope newlines else {$$ = new Statement();}
-    | ACCEPT                           {$$ = new Statement();}
-    | REJECTION                        {$$ = new Statement();}
+    operation           {$$ = new Statement {Statement::type::operation, nullptr, $operation};}
+    | IF conditional    {$$ = new Statement {Statement::type::conditional, $conditional, nullptr};}
+    | ACCEPT            {$$ = new Statement {Statement::type::accept, nullptr, nullptr};}
+    | REJECTION         {$$ = new Statement {Statement::type::reject, nullptr, nullptr};}
+    ;
+
+operation:
+    write travel transition {$$ = new Operation {$write, $travel, $transition};}
+    ;
+
+conditional:
+    condition scope newlines else    {$$ = new Conditional {$condition, $scope, $else};}
     ;
 
 else: 
-    OR condition scope else {$$ = new Statement();}
-    | ELSE scope            {$$ = $scope;}
-    | statement             {$$ = $statement;}
+    OR conditional  {$$ = new Statement {Statement::type::conditional, $conditional, nullptr};}
+    | ELSE scope    {$$ = $scope;}
+    | statement     {$$ = $statement;}
     ;
 
 write: 
     %empty                                      {$$ = nullptr;}
-    | MARK COMMA                                {$$ = new Write();}
-    | UNMARK COMMA                              {$$ = new Write();}
-    | WRITE string reversal repetition COMMA    {$$ = new Write();}
+    | MARK COMMA                                {$$ = new Write {Write::type::mark, "", false, 0};}
+    | UNMARK COMMA                              {$$ = new Write {Write::type::unmark, "", false, 0};}
+    | WRITE string reversal repetition COMMA    {$$ = new Write {Write::type::write, $string, $reversal, $repetition};}
     ;
 
 travel: 
@@ -247,12 +249,25 @@ until:
     ;
 
 condition:
-    symbol
-    | group_ref
-    | MARKED                    {$$ = new Condition();}
-    | UNMARKED                  {$$ = new Condition();}
-    | condition OR symbol       {$$ = new Condition();}
-    | condition OR group_ref    {$$ = new Condition();}
+    group_ref                   {$$ = $group_ref;}
+    | symbol                    {$$ = new Condition {Condition::type::symbols, {$symbol}};}
+    | MARKED                    {$$ = new Condition {Condition::type::marked, {}};}
+    | UNMARKED                  {$$ = new Condition {Condition::type::unmarked, {}};}
+    | condition[c] OR symbol
+    {
+        $$ = $c;
+        auto a = $c -> symbols;
+        
+        a.push_back($symbol); 
+    }
+    | condition[c] OR group_ref
+    {
+        $$ = $c;
+        auto a = $c -> symbols;
+        auto b = $group_ref -> symbols;
+
+        a.insert(a.end(), b.begin(), b.end());
+    }
     ;
 
 block_ref:
@@ -261,7 +276,8 @@ block_ref:
         auto reference = blocks.find($IDENTIFIER);
 
         if (reference == blocks.end()) {
-            blocks.insert({$IDENTIFIER, {nullptr, @IDENTIFIER}});
+            const auto& [iterator, x] = blocks.insert({$IDENTIFIER, {nullptr, @IDENTIFIER}});
+            reference = iterator;
         }
 
         $$ = (*reference).second.first;
@@ -271,12 +287,15 @@ block_ref:
 group_ref:
     IDENTIFIER
     {
-        auto group = groups.find($IDENTIFIER);
+        auto reference = groups.find($IDENTIFIER);
 
-        if (group != groups.end())
-            $$ = new Condition();
+        if (reference != groups.end()) {
+            auto group = reference -> second;
 
-        else Parser::error(@IDENTIFIER, "couldnt find group");
+            $$ = new Condition {Condition::type::symbols, *group};
+        }
+
+        else throw syntax_error(@IDENTIFIER, "couldnt find group");
     }
     ;
 
@@ -284,5 +303,5 @@ group_ref:
 
 void yy::Parser::error(const location_type& l, const std::string& m)
 {
-  std::cerr << l << ": " << m << '\n';
+    std::cerr << l << ": " << m << std::endl;
 }

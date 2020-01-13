@@ -10,8 +10,8 @@
 
     #define YY_USER_ACTION yylloc->columns (yyleng);
     #define YY_DECL int yylex(              \
-        yy::Parser::semantic_type *yylval,  \
-        yy::Parser::location_type *yylloc   \
+        yy::Parser::semantic_type* yylval,  \
+        yy::Parser::location_type* yylloc   \
     )
 
 
@@ -21,8 +21,6 @@
     int indent = 0;
     int spaces = 0;
     int lines = 0;
-
-
 %}
 
 %x SCOPE COMMENT
@@ -126,8 +124,8 @@
     }
 
     else {
-        //error
-    };
+        throw yy::Parser::syntax_error(*yylloc, "mismatched indentation, tabs must be in groups of " + std::to_string(TAB));
+    }
 }
 
 <<EOF>> {   
