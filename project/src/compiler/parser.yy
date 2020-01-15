@@ -101,17 +101,26 @@ program:
 optional_groups:
     %empty
     | groups
+    | error
     ;
 
 optional_blocks:
     %empty
     | blocks
+    | error
     ;
 
 groups: 
     group newlines
     | groups group newlines
+    | groups error newlines
     ;
+
+blocks:  
+    block newlines
+    | blocks block newlines
+    | blocks error newlines
+    ; 
 
 group: 
     IDENTIFIER "=" symbols
@@ -150,11 +159,6 @@ block:
     }
     ;
 
-blocks:  
-    block newlines
-    | blocks block newlines
-    ; 
-
 symbols: 
     symbol
     {
@@ -174,7 +178,8 @@ symbol:
     ;
 
 scope: 
-    INDENT newlines statement optional_newlines DEDENT {$$ = $statement;}
+    INDENT newlines statement optional_newlines DEDENT          {$$ = $statement;}
+    | INDENT optional_newlines error optional_newlines DEDENT   {}
     ;
 
 newlines:
@@ -219,8 +224,9 @@ travel:
     ;
 
 transition: 
-    newlines statement      {$$ = & $statement;}
+    newlines statement      {$$ = &$statement;}
     | COMMA DO block_ref    {$$ = $block_ref;}
+    | newlines error        {}
     ;
 
 direction: 
@@ -298,7 +304,6 @@ group_ref:
         else throw syntax_error(@IDENTIFIER, "couldnt find group");
     }
     ;
-
 %%
 
 void yy::Parser::error(const location_type& l, const std::string& m)

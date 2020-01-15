@@ -26,3 +26,6 @@ filled out different token types, added location tracking and error messages
 worked on resolving shift reduce conflicts in grammar and forward declarations of block names
 
 fixed conflicts by adding block and group initialiser keywords, finally got a successful parse
+
+describes a similar system to the language of this project called a wang-B machine
+    https://web.stanford.edu/class/archive/cs/cs103/cs103.1132/lectures/19/Small19.pdf
