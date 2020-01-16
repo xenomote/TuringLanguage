@@ -39,3 +39,4 @@
 *.tab.cc
 *.tab.hh
 stack.hh
+node_modules

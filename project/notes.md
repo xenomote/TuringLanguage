@@ -26,3 +26,10 @@ filled out different token types, added location tracking and error messages
 worked on resolving shift reduce conflicts in grammar and forward declarations of block names
 
 fixed conflicts by adding block and group initialiser keywords, finally got a successful parse
+
+began using PyQt5 to create editor
+adapted https://doc.qt.io/qt-5qtwidgets-widgets-codeeditor-example.html into python
+
+used https://www.riverbankcomputing.com/static/Docs/PyQt5/index.html as reference for PyQt5 development
+
+investigated implementing editor as a vscode extension, created syntax highlighting plugin
