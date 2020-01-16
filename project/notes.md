@@ -33,3 +33,6 @@ adapted https://doc.qt.io/qt-5qtwidgets-widgets-codeeditor-example.html into pyt
 used https://www.riverbankcomputing.com/static/Docs/PyQt5/index.html as reference for PyQt5 development
 
 investigated implementing editor as a vscode extension, created syntax highlighting plugin
+
+describes a similar system to the language of this project called a wang-B machine
+    https://web.stanford.edu/class/archive/cs/cs103/cs103.1132/lectures/19/Small19.pdf

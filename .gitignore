@@ -32,11 +32,17 @@
 *.app
 
 # Flex and bison files
-*.yy.c
-*.yy.h
-*.tab.c
-*.tab.h
-*.tab.cc
-*.tab.hh
+*.ll.*
+*.yy.*
+location.hh
+position.hh
 stack.hh
+
+#vscode configurations
+.vscode
+
+#node modules
 node_modules
+
+#output file
+compiler
