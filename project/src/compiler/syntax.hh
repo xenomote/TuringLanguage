@@ -1,17 +1,39 @@
 #ifndef SYNTAX_H
 #define SYNTAX_H
 
-#include "runtime/machine.hh"
+#include "machine.hh"
+
+class Syntax;
+class Generator;
 
 struct Statement;
 struct Conditional;
-struct Condition;
-struct Symbol;
 struct Operation;
+
 struct Write;
 struct Travel;
+struct Condition;
+struct Symbol;
 
-struct Statement {
+class Syntax {
+public:
+    virtual ~Syntax() {};
+    
+    virtual void accept(Generator& generator) = 0;
+};
+
+class Generator {
+public:
+    virtual ~Generator() {};
+
+    virtual void generate(Statement& statement) = 0;
+    virtual void generate(Conditional& conditional) = 0;
+    virtual void generate(Operation& operation) = 0;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class Statement : public Syntax {
     enum struct type {
         accept,
         reject,
@@ -23,10 +45,16 @@ struct Statement {
     Operation* operation;
 };
 
-struct Conditional {
+class Conditional : public Syntax {
     Condition* condition;
     Statement* success;
     Statement* failure;
+};
+
+class Operation : public Syntax {
+    Write* write;
+    Travel* travel;
+    Statement** next;
 };
 
 struct Condition {
@@ -48,12 +76,6 @@ struct Symbol {
     char symbol;
 };
 
-struct Operation {
-    Write* write;
-    Travel* travel;
-    Statement** next;
-};
-
 struct Write {
     enum struct type {
         write,
@@ -70,6 +92,18 @@ struct Travel {
     bool direction;
     int repetition;
     Condition* until;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+
+class StateGenerator : public Generator
+{
+
+};
+
+class StringGenerator : public Generator
+{
+
 };
 
 #endif
