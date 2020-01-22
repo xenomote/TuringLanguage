@@ -1,26 +1,19 @@
 #ifndef SYNTAX_H
 #define SYNTAX_H
 
+#include <sstream>
+
 #include "machine.hh"
 
-class Syntax;
 class Generator;
 
 struct Statement;
 struct Conditional;
 struct Operation;
-
 struct Write;
 struct Travel;
 struct Condition;
 struct Symbol;
-
-class Syntax {
-public:
-    virtual ~Syntax() {};
-    
-    virtual void accept(Generator& generator) = 0;
-};
 
 class Generator {
 public:
@@ -29,11 +22,15 @@ public:
     virtual void generate(Statement& statement) = 0;
     virtual void generate(Conditional& conditional) = 0;
     virtual void generate(Operation& operation) = 0;
+    virtual void generate(Write& write) = 0;
+    virtual void generate(Travel& travel) = 0;
+    virtual void generate(Condition& condition) = 0;
+    virtual void generate(Symbol& symbol) = 0;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 
-class Statement : public Syntax {
+struct Statement {
     enum struct type {
         accept,
         reject,
@@ -45,13 +42,13 @@ class Statement : public Syntax {
     Operation* operation;
 };
 
-class Conditional : public Syntax {
+struct Conditional {
     Condition* condition;
     Statement* success;
     Statement* failure;
 };
 
-class Operation : public Syntax {
+struct Operation {
     Write* write;
     Travel* travel;
     Statement** next;
@@ -89,7 +86,7 @@ struct Write {
 };
 
 struct Travel {
-    bool direction;
+    Direction direction;
     int repetition;
     Condition* until;
 };
@@ -101,9 +98,23 @@ class StateGenerator : public Generator
 
 };
 
-class StringGenerator : public Generator
-{
+class StringGenerator : public Generator {
+public:
+    void generate(Statement& statement);
+    void generate(Conditional& conditional);
+    void generate(Operation& operation);
+    void generate(Write& write);
+    void generate(Travel& travel);
+    void generate(Condition& condition);
+    void generate(Symbol& symbol);
 
+    std::string output();
+
+    StringGenerator();
+
+private:
+    std::stringstream buffer;
+    int indent;
 };
 
 #endif

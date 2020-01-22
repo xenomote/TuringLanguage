@@ -8,6 +8,7 @@
 %defines
 
 %define api.parser.class {Parser}
+%parse-param {Statement*& program}
 
 %code top
 {
@@ -35,7 +36,6 @@
 
     std::map<std::string, std::list<Symbol*>*> groups;
     std::map<std::string, std::pair<Statement**, yy::Parser::location_type>> blocks;
-
 }
 
 %define api.value.type variant
@@ -87,14 +87,15 @@ program:
     optional_blocks
     {
         for (const auto& [name, value] : blocks) {
-            const auto& [reference, location] = value;
-            if (reference == nullptr) {
+            const auto& [pointer, location] = value;
+            if (*pointer == nullptr) {
                 throw syntax_error(location, "unsatisfied reference to \"" + name + "\"");
             }
                 
         }
 
-        program = $statement;
+        $program = $statement;
+        program = $program;
     }
     ;
 
@@ -144,18 +145,28 @@ block:
     {
         auto reference = blocks.find($IDENTIFIER);
 
-        // if it does not already exist
+        // if it has not been declared
         if (reference == blocks.end()) {
-            blocks.insert({$IDENTIFIER, {&$scope, @IDENTIFIER}});
+            auto pointer = new Statement* ($scope);
+            blocks.insert({$IDENTIFIER, {pointer, @IDENTIFIER}});
         }
 
         // if it has already been defined
-        else if ((reference -> second).first != nullptr) {
+        else if (*((reference -> second).first) != nullptr) {
             throw syntax_error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
         }
 
-        // if it has never been defined
-        else reference -> second = {&$scope, @IDENTIFIER};
+        // if it has been declared but not defined
+        else {
+            std::cout << "defining " << $IDENTIFIER << std::endl;
+            if ($scope == nullptr) std::cout << "AAAAAAAAAAAAAAAAAa";
+            auto& pointer = reference -> second.first;
+            auto& location = reference -> second.second;
+
+            std::cout << *pointer;
+            *pointer = $scope;
+            location = @IDENTIFIER;
+        }
     }
     ;
 
@@ -179,7 +190,7 @@ symbol:
 
 scope: 
     INDENT newlines statement optional_newlines DEDENT          {$$ = $statement;}
-    | INDENT optional_newlines error optional_newlines DEDENT   {}
+    | INDENT error DEDENT   {}
     ;
 
 newlines:
@@ -220,11 +231,14 @@ write:
     ;
 
 travel: 
-    GO direction repetition until   {$$ = new Travel();}
+    GO direction repetition until   {$$ = new Travel {$direction, $repetition, $until};}
     ;
 
 transition: 
-    newlines statement      {$$ = &$statement;}
+    newlines statement {
+        Statement** pointer = new Statement* ($statement);
+        $$ = pointer;
+    }
     | COMMA DO block_ref    {$$ = $block_ref;}
     | newlines error        {}
     ;
@@ -262,15 +276,15 @@ condition:
     | condition[c] OR symbol
     {
         $$ = $c;
-        auto a = $c -> symbols;
-        
+        auto& a = $c -> symbols;
+
         a.push_back($symbol); 
     }
     | condition[c] OR group_ref
     {
         $$ = $c;
-        auto a = $c -> symbols;
-        auto b = $group_ref -> symbols;
+        auto& a = $c -> symbols;
+        auto& b = $group_ref -> symbols;
 
         a.insert(a.end(), b.begin(), b.end());
     }
@@ -282,11 +296,12 @@ block_ref:
         auto reference = blocks.find($IDENTIFIER);
 
         if (reference == blocks.end()) {
-            const auto& [iterator, x] = blocks.insert({$IDENTIFIER, {nullptr, @IDENTIFIER}});
+            Statement** pointer = new Statement* (nullptr);
+            const auto& [iterator, x] = blocks.insert({$IDENTIFIER, {pointer, @IDENTIFIER}});
             reference = iterator;
         }
-
-        $$ = (*reference).second.first;
+        std::cout << *(reference -> second.first);
+        $$ = reference -> second.first;
     }
     ;
 

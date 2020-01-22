@@ -14,7 +14,7 @@ enum Direction {left, right};
 
 template <int n>
 struct State {
-    std::pair<int, int> source_position;
+    std::string source;
     std::array<char, n> write;
     std::array<int, n> transition;
     std::array<Direction, n> direction;

@@ -8,7 +8,7 @@ YFLAGS=
 LEX=flex
 LFLAGS=
 
-OBJECTS=main.o compiler.o lexer.o parser.o
+OBJECTS=main.o compiler.o lexer.o parser.o syntax.o
 
 #DEPENDENCIES
 
@@ -21,6 +21,8 @@ compiler.o: compiler.hh parser.hh lexer.hh
 parser.o: parser.hh lexer.hh
 
 lexer.o: lexer.hh parser.yy.hh
+
+sytax.o: syntax.hh
 
 #CLEANUP
 
