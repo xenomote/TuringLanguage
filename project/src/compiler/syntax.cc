@@ -2,6 +2,47 @@
 
 #include "syntax.hh"
 
+StateGenerator::StateGenerator()
+: states()
+{}
+
+void StateGenerator::generate(Statement& statement)
+{
+
+}
+
+void StateGenerator::generate(Conditional& conditional)
+{
+
+}
+
+void StateGenerator::generate(Operation& operation)
+{
+
+}
+
+void StateGenerator::generate(Write& write)
+{
+
+}
+
+void StateGenerator::generate(Travel& travel)
+{
+
+}
+
+void StateGenerator::generate(Condition& condition)
+{
+
+}
+
+void StateGenerator::generate(Symbol& symbol)
+{
+
+}
+
+
+
 StringGenerator::StringGenerator()
 : buffer()
 , indent(0)

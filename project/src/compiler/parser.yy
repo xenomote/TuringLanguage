@@ -1,7 +1,7 @@
 
 %language "c++"
 
-//%define parse.assert
+%define parse.assert
 %define parse.error verbose
 
 %locations
@@ -158,12 +158,9 @@ block:
 
         // if it has been declared but not defined
         else {
-            std::cout << "defining " << $IDENTIFIER << std::endl;
-            if ($scope == nullptr) std::cout << "AAAAAAAAAAAAAAAAAa";
             auto& pointer = reference -> second.first;
             auto& location = reference -> second.second;
 
-            std::cout << *pointer;
             *pointer = $scope;
             location = @IDENTIFIER;
         }
@@ -300,7 +297,7 @@ block_ref:
             const auto& [iterator, x] = blocks.insert({$IDENTIFIER, {pointer, @IDENTIFIER}});
             reference = iterator;
         }
-        std::cout << *(reference -> second.first);
+
         $$ = reference -> second.first;
     }
     ;

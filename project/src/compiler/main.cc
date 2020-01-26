@@ -58,5 +58,9 @@ int main(int argc, char** argv)
         cout << generator.output();
     }
 
-    else cout << "failure";
+    else {
+        cout << "failure";
+    }
+
+    cout << "done";
 }

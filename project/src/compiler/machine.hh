@@ -2,7 +2,7 @@
 #define RUNTIME_H
 
 #include <list>
-#include <array>
+#include <vector>
 
 #define TAPE_SIZE 1024
 #define MAX_INSTANCES 1024
@@ -12,25 +12,25 @@ static const int blank = 0;
 
 enum Direction {left, right};
 
-template <int n>
-struct State {
+struct State 
+{
     std::string source;
-    std::array<char, n> write;
-    std::array<int, n> transition;
-    std::array<Direction, n> direction;
+    std::vector<char> write;
+    std::vector<int> transition;
+    std::vector<Direction> direction;
 };
 
-template <int n, int m>
-class Machine {
+class Machine 
+{
 private:
-    std::array<State<n>, m> states;
-    typename std::array<State<n>, m>::iterator state;
-
     std::list<int> tape;
-    typename std::list<int>::iterator head;
+    std::vector<State> states;
+
+    std::list<int>::iterator head;
+    std::vector<State>::iterator state;
 
 public:
-    Machine(std::array<State<n>, m> states, std::list<int> tape)
+    Machine(std::vector<State> states, std::list<int> tape)
     : tape(tape)
     , states(states)
     , head(begin(tape))
@@ -39,7 +39,7 @@ public:
 
     bool halted()
     {
-        return state -> transition[*head] == nullptr;
+        return state -> transition[*head] == 0;
     }
 
     void step()
@@ -52,16 +52,13 @@ public:
             tape.push_back(blank);
         }
 
-        switch (state -> direction[symbol]) 
-        {
-            case left: if (head != tape.begin()) head--;
-                break;
-        
-            case right: head++;
-                break;
+        if (state -> direction[symbol] == left) {
+            if (head != tape.begin()) head--;
         } 
+        
+        else head++;
 
-        state = state -> transition[symbol];
+        state = next(states.begin(), state -> transition[symbol]);
     }
 };
 

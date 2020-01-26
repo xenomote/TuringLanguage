@@ -2,6 +2,7 @@
 #define SYNTAX_H
 
 #include <sstream>
+#include <vector>
 
 #include "machine.hh"
 
@@ -95,7 +96,21 @@ struct Travel {
 
 class StateGenerator : public Generator
 {
+public:
+    void generate(Statement& statement);
+    void generate(Conditional& conditional);
+    void generate(Operation& operation);
+    void generate(Write& write);
+    void generate(Travel& travel);
+    void generate(Condition& condition);
+    void generate(Symbol& symbol);
 
+    std::vector<State> output();
+
+    StateGenerator();
+
+private:
+    std::vector<State> states;
 };
 
 class StringGenerator : public Generator {

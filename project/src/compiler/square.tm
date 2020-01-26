@@ -6,8 +6,6 @@ go right until 0
 mark, go right, do first
 
 first:
-    if a
-        reject
     go right until start
     if _
         accept
@@ -15,8 +13,6 @@ first:
         write X, go right, do cross
 
 cross:
-    if b
-        accept
     go right until start
     if _
         go left until marked, do first
