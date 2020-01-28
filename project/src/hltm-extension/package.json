@@ -1,0 +1,46 @@
+{
+    "name": "hltm-support",
+    "displayName": "HLTM support",
+    "description": "support for the high level turing machine description language",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.40.0"
+    },
+    "categories": [
+        "Programming Languages",
+        "Debuggers"
+    ],
+    "activationEvents": [
+        "onLanguage:hltm"
+    ],
+    "main": "./src/extension",
+    "contributes": {
+        "languages": [
+            {
+                "id": "hltm",
+                "aliases": [
+                    "HLTM",
+                    "hltm"
+                ],
+                "extensions": [
+                    ".tm"
+                ],
+                "configuration": "./src/language-configuration.json"
+            }
+        ],
+        "grammars": [
+            {
+                "language": "hltm",
+                "scopeName": "source.hltm",
+                "path": ".src/syntaxes/hltm.tmLanguage.json"
+            }
+        ]
+    },
+
+    "dependencies": {
+        "vscode": "1.1.36",
+        "vscode-languageclient": "5.2.1",
+        "vscode-languageserver": "5.2.1",
+        "vscode-languageserver-protocol": "3.14.1"
+    }
+}

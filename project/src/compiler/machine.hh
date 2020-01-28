@@ -10,14 +10,21 @@
 
 static const int blank = 0;
 
-enum Direction {left, right};
+enum direction {left, right};
+enum result {accept, reject};
+
+struct symbol
+{
+    bool marked;
+    char symbol;
+};
 
 struct State 
 {
     std::string source;
     std::vector<char> write;
     std::vector<int> transition;
-    std::vector<Direction> direction;
+    std::vector<direction> direction;
 };
 
 class Machine 

@@ -1,4 +1,3 @@
-
 %language "c++"
 
 %define parse.assert
@@ -8,6 +7,7 @@
 %defines
 
 %define api.parser.class {Parser}
+
 %parse-param {Statement*& program}
 
 %code top

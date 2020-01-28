@@ -1,135 +1,49 @@
 #ifndef SYNTAX_H
 #define SYNTAX_H
 
-#include <sstream>
-#include <vector>
+#include <optional>
+#include <variant>
+#include <map>
+#include <set>
 
 #include "machine.hh"
 
-class Generator;
+struct program;
+struct condition;
+struct conditional;
+struct operation;
 
-struct Statement;
-struct Conditional;
-struct Operation;
-struct Write;
-struct Travel;
-struct Condition;
-struct Symbol;
+using reference = std::string;
+using statement = std::variant<operation, conditional, reference, result>;
 
-class Generator {
-public:
-    virtual ~Generator() {};
-
-    virtual void generate(Statement& statement) = 0;
-    virtual void generate(Conditional& conditional) = 0;
-    virtual void generate(Operation& operation) = 0;
-    virtual void generate(Write& write) = 0;
-    virtual void generate(Travel& travel) = 0;
-    virtual void generate(Condition& condition) = 0;
-    virtual void generate(Symbol& symbol) = 0;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-struct Statement {
-    enum struct type {
-        accept,
-        reject,
-        conditional,
-        operation
-    } type;
-
-    Conditional* conditional;
-    Operation* operation;
-};
-
-struct Conditional {
-    Condition* condition;
-    Statement* success;
-    Statement* failure;
-};
-
-struct Operation {
-    Write* write;
-    Travel* travel;
-    Statement** next;
-};
-
-struct Condition {
-    enum struct type {
-        symbols,
-        marked,
-        unmarked
-    } type;
-
-    std::list<Symbol*> symbols;
-};
-
-struct Symbol {
-    enum struct type {
-        marked,
-        unmarked
-    } type;
-
-    char symbol;
-};
-
-struct Write {
-    enum struct type {
-        write,
-        mark,
-        unmark
-    } type;
-
-    std::string string;
-    bool reversed;
-    int repetition;
-};
-
-struct Travel {
-    Direction direction;
-    int repetition;
-    Condition* until;
-};
-
-////////////////////////////////////////////////////////////////////////////////
-
-class StateGenerator : public Generator
+struct program
 {
-public:
-    void generate(Statement& statement);
-    void generate(Conditional& conditional);
-    void generate(Operation& operation);
-    void generate(Write& write);
-    void generate(Travel& travel);
-    void generate(Condition& condition);
-    void generate(Symbol& symbol);
-
-    std::vector<State> output();
-
-    StateGenerator();
-
-private:
-    std::vector<State> states;
+    std::list<statement> statements;
+    std::map<std::string, condition> groups;
+    std::map<std::string, std::list<statement>> blocks;
 };
 
-class StringGenerator : public Generator {
-public:
-    void generate(Statement& statement);
-    void generate(Conditional& conditional);
-    void generate(Operation& operation);
-    void generate(Write& write);
-    void generate(Travel& travel);
-    void generate(Condition& condition);
-    void generate(Symbol& symbol);
+struct condition
+{
+    std::set<symbol> symbols;
+};
 
-    std::string output();
+struct conditional
+{
+    std::map<condition, std::list<statement>> conditions;
+};
 
-    StringGenerator();
+struct while_loop   {condition condition;};
+struct until_loop   {condition condition;};
+struct repetition   {int repetitions;};
 
-private:
-    std::stringstream buffer;
-    int indent;
+using modifier = std::variant<while_loop, until_loop, repetition>;
+
+struct operation
+{
+    direction direction;
+    std::optional<symbol> write;
+    std::list<modifier> modifiers;
 };
 
 #endif

@@ -36,3 +36,5 @@ investigated implementing editor as a vscode extension, created syntax highlight
 
 describes a similar system to the language of this project called a wang-B machine
     https://web.stanford.edu/class/archive/cs/cs103/cs103.1132/lectures/19/Small19.pdf
+
+changed the grammar to be more flexible, more closely reflecting Wang-B machines. Also changed parser to focus more on syntax, AST will be type checked in multiple passes.

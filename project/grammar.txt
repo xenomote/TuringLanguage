@@ -1,39 +1,44 @@
+id          = [a-zA-Z][a-zA-Z0-9]+
+number      = 0[1-9][0-9]*
+symbol      = [a-zA-Z0-9...]
+indent      = // increase in indentation
+dedent      = // decrease in indentation
+
+%%
+
 program ->
-    | 
+    | groups statements blocks
+
+groups ->
+    | group*
 
 group ->
-    | IDENTIFIER "=" symbol {"," symbol}
+    | id '=' symbol+
 
-symbol ->
-    | ["marked"] SYMBOL
+blocks ->
+    | block*
 
 block ->
-    | IDENTIFIER ":" scope
+    | id ':' statements
 
-condition ->
-    | symbol
-    | IDENTIFIER
-    | "marked"
-    | "unmarked"
-    | condition "or" condition
+statements ->
+    | [write] go ('do' id | statements)
+    | 'if' if_statements
 
-scope ->
-    | INDENT statement UNINDENT
+if_statements ->
+    | [write] go ('do' id ['or' do_or_statements] | if_statements)
+    | 'or' or_statements
 
-statement ->
-    | "if" condition scope {"or" condition scope} ["else" scope | NEWLINE statement]
-    | [write ","] travel (["," transition] | LINE statement)
-    | "accept"
-    | "reject"
+or_statements ->
+    | [write] go ('do' id ['else' else_statements] | or_statements)
+    | 'else' else_statements
 
-write ->
-    | "mark"
-    | "unmark"
-    | "write" symbol {symbol} ["backwards"] [NUMBER "times"]
+else_statements ->
+    | [write] go ('do' id | else_statements)
 
-travel ->
-    | "go" direction [NUMBER "times"] ["until" condition]
 
-transition ->
-    | "do" IDENTIFIER
-    | NEWLINE statement
+do_if_statements
+
+do_or_statements
+
+do_else_statements
