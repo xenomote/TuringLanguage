@@ -8,7 +8,7 @@
 
 %define api.parser.class {Parser}
 
-%parse-param {Statement*& program}
+%parse-param {program& result}
 
 %code top
 {
@@ -31,11 +31,6 @@
     );
 
     std::string buffer = "";
-
-    Statement* program;
-
-    std::map<std::string, std::list<Symbol*>*> groups;
-    std::map<std::string, std::pair<Statement**, yy::Parser::location_type>> blocks;
 }
 
 %define api.value.type variant
@@ -46,7 +41,7 @@
 %token WRITE GO DO
 %token MARK UNMARK MARKED UNMARKED
 %token LEFT RIGHT
-%token UNTIL NUMBER BACKWARDS
+%token WHILE UNTIL NUMBER BACKWARDS
 
 %token <std::string> IDENTIFIER
 %token <char> SYMBOL
@@ -56,20 +51,40 @@
 %token COMMA        ","
 %token COLON        ":"
 
-%type <Statement*> program statement scope else
-%type <Condition*> condition until group_ref
-%type <Conditional*> conditional
-%type <Operation*> operation
+%type <program> program
 
-%type <std::list<Symbol*>*> symbols
-%type <Symbol*> symbol
+%type <std::map<std::string, condition>> groups
+%type <std::map<std::string, std::list<statement>>> blocks
 
-%type <Write*> write
-%type <Travel*> travel
-%type <Statement**> transition block_ref
+%type <std::pair<std::string, condition>> group
+%type <std::pair<std::string, std::list<statement>>> block
+
+%type <statement> statement
+%type <std::list<statement>> statements scope
+
+%type <operation> operation
+%type <conditional> conditional
+
+%type <std::map<condition, std::list<statement>>> cases
+%type <std::pair<condition, std::list<statement>>> if_case or_case
+
+%type <condition> condition
+%type <grouping> grouping
+
+%type <until_loop> until_loop
+%type <while_loop> while_loop
 %type <int> repetition
-%type <Direction> direction reversal
-%type <std::string> string
+
+%type <direction> travel direction
+%type <std::optional<tape_write>> write
+%type <std::list<modifier>> modifiers
+%type <modifier> modifier
+
+%type <symbol> symbol
+%type <std::set<symbol>> symbols
+%type <std::string> block_reference group_reference
+
+%type <int> NUMBER
 
 %initial-action {
     @$.begin.filename = @$.end.filename = new std::string("stdin");
@@ -80,164 +95,126 @@
 %%
 
 program:
-    optional_newlines
-    optional_groups
-    statement
-    optional_newlines 
-    optional_blocks
+    groups statements blocks 
     {
-        for (const auto& [name, value] : blocks) {
-            const auto& [pointer, location] = value;
-            if (*pointer == nullptr) {
-                throw syntax_error(location, "unsatisfied reference to \"" + name + "\"");
-            }
-                
-        }
-
-        $program = $statement;
-        program = $program;
+        $$ = {$statements, $groups, $blocks};
+        result = $$;
     }
-    ;
-
-optional_groups:
-    %empty
-    | groups
-    | error
-    ;
-
-optional_blocks:
-    %empty
-    | blocks
-    | error
     ;
 
 groups: 
-    group newlines
-    | groups group newlines
-    | groups error newlines
+    %empty                  {}
+    | group newlines                {$$ = {$group};}
+    | groups group newlines {$$ = $1; $$.insert($group);}
     ;
 
 blocks:  
-    block newlines
-    | blocks block newlines
-    | blocks error newlines
+    %empty                  {}
+    | blocks block newlines {$$ = $1; $$.insert($block);}
     ; 
 
 group: 
-    IDENTIFIER "=" symbols
-    {
-        auto reference = groups.find($IDENTIFIER);
-        
-        // if it does not already exist
-        if (reference == groups.end()) {
-            groups.insert({$IDENTIFIER, $symbols});
-        }
-
-        // if it already exists
-        else {
-            throw syntax_error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
-        }
-    }
+    IDENTIFIER "=" condition  {$$ = {$IDENTIFIER, $condition};}
     ;
 
 block: 
-    IDENTIFIER ":" scope
-    {
-        auto reference = blocks.find($IDENTIFIER);
-
-        // if it has not been declared
-        if (reference == blocks.end()) {
-            auto pointer = new Statement* ($scope);
-            blocks.insert({$IDENTIFIER, {pointer, @IDENTIFIER}});
-        }
-
-        // if it has already been defined
-        else if (*((reference -> second).first) != nullptr) {
-            throw syntax_error(@IDENTIFIER, "erroneous redefinition of " + $IDENTIFIER);
-        }
-
-        // if it has been declared but not defined
-        else {
-            auto& pointer = reference -> second.first;
-            auto& location = reference -> second.second;
-
-            *pointer = $scope;
-            location = @IDENTIFIER;
-        }
-    }
-    ;
-
-symbols: 
-    symbol
-    {
-        $$ = new std::list<Symbol*>();
-        $$ -> push_back($symbol);
-    }
-    | symbols[list] "," symbol
-    {
-        $list -> push_back($symbol);
-        $$ = $list;
-    }
-    ;
-
-symbol: 
-    SYMBOL          {$$ = new Symbol {Symbol::type::unmarked, $SYMBOL};}
-    | MARKED SYMBOL {$$ = new Symbol {Symbol::type::marked, $SYMBOL};}
+    IDENTIFIER ":" scope    {$$ = {$IDENTIFIER, $scope};}
     ;
 
 scope: 
-    INDENT newlines statement optional_newlines DEDENT          {$$ = $statement;}
-    | INDENT error DEDENT   {}
+    INDENT newlines statements DEDENT newlines {$$ = $statements;}
     ;
 
-newlines:
-    NEWLINE optional_newlines
-    ;
-
-optional_newlines:
-    %empty
-    | optional_newlines NEWLINE
+statements:
+    statement                       {$$ = {$statement};}
+    | statements newlines statement {$$ = $1; $$.push_back($statement);}
     ;
 
 statement:
-    operation           {$$ = new Statement {Statement::type::operation, nullptr, $operation};}
-    | IF conditional    {$$ = new Statement {Statement::type::conditional, $conditional, nullptr};}
-    | ACCEPT            {$$ = new Statement {Statement::type::accept, nullptr, nullptr};}
-    | REJECTION         {$$ = new Statement {Statement::type::reject, nullptr, nullptr};}
-    ;
-
-operation:
-    write travel transition {$$ = new Operation {$write, $travel, $transition};}
+    conditional             {}
+    | operation             {}
+    | ACCEPT                {$$ = accept;}
+    | REJECTION             {$$ = reject;}
+    | DO block_reference    {$$ = $block_reference;}
     ;
 
 conditional:
-    condition scope newlines else    {$$ = new Conditional {$condition, $scope, $else};}
+    cases                       {$$ = {$cases, {}};}
+    | cases ELSE scope {$$ = {$cases, $scope};}
     ;
 
-else: 
-    OR conditional  {$$ = new Statement {Statement::type::conditional, $conditional, nullptr};}
-    | ELSE scope    {$$ = $scope;}
-    | statement     {$$ = $statement;}
+cases:
+    if_case                 {$$ = {$if_case};}
+    | cases or_case   {$$ = $1; $$.insert($or_case);}
+    ;
+
+if_case:
+    IF condition scope  {$$ = {$condition, $scope};}
+    ;
+
+or_case:
+    OR condition scope  {$$ = {$condition, $scope};}
+    ;
+
+condition:
+    grouping                {$$ = {$grouping};}
+    | symbols               {$$ = {$symbols};}
+    | condition OR grouping {$$ = $1; $$.insert($grouping);}
+    | condition OR symbols  {$$ = $1; $$.insert($symbols);}
+    ;
+
+grouping:
+    group_reference             {}
+    | MARKED                    {$$ = true;}
+    | UNMARKED                  {$$ = false;}
+    ;
+
+symbols: 
+    symbol                  {$$ = {$symbol};}
+    | symbols "," symbol    {$$ = $1; $$.insert($symbol);}
+    ;
+
+symbol: 
+    SYMBOL          {$$ = {false, $SYMBOL};}
+    | MARKED SYMBOL {$$ = {true, $SYMBOL};}
+    ;
+
+operation:
+    write travel modifiers  {$$ = {$travel, $write, $modifiers};}
     ;
 
 write: 
-    %empty                                      {$$ = nullptr;}
-    | MARK COMMA                                {$$ = new Write {Write::type::mark, "", false, 0};}
-    | UNMARK COMMA                              {$$ = new Write {Write::type::unmark, "", false, 0};}
-    | WRITE string reversal repetition COMMA    {$$ = new Write {Write::type::write, $string, $reversal, $repetition};}
+    %empty                  {$$ = {};}
+    | MARK COMMA            {$$ = true;}
+    | UNMARK COMMA          {$$ = false;}
+    | WRITE symbol COMMA    {$$ = $symbol;}
     ;
 
 travel: 
-    GO direction repetition until   {$$ = new Travel {$direction, $repetition, $until};}
+    GO direction    {$$ = $direction;}
     ;
 
-transition: 
-    newlines statement {
-        Statement** pointer = new Statement* ($statement);
-        $$ = pointer;
-    }
-    | COMMA DO block_ref    {$$ = $block_ref;}
-    | newlines error        {}
+modifiers:
+    %empty                  {}
+    | modifiers modifier    {$$ = $1; $$.push_back($modifier);}
+    ;
+
+modifier:
+    while_loop      {}
+    | until_loop    {}
+    | repetition    {}
+    ;
+
+while_loop:
+    WHILE condition {$$ = {$condition};}
+    ;
+
+until_loop:
+    UNTIL condition {$$ = {$condition};}
+    ;
+
+repetition: 
+    NUMBER TIMES    {$$ = $NUMBER;}
     ;
 
 direction: 
@@ -245,76 +222,18 @@ direction:
     | RIGHT {$$ = right;}
     ;
 
-string: 
-    string SYMBOL   {buffer += $SYMBOL;}
-    | SYMBOL        {buffer = $SYMBOL;}
-    ;
-
-reversal: 
-    %empty      {$$ = left;}
-    | BACKWARDS {$$ = right;}
-    ;
-
-repetition: 
-    %empty          {$$ = 1;}
-    |  NUMBER TIMES {$$ = $TIMES;}
-    ;
-
-until: 
-    %empty              {$$ = nullptr;}
-    | UNTIL condition   {$$ = $condition;}
-    ;
-
-condition:
-    group_ref                   {$$ = $group_ref;}
-    | symbol                    {$$ = new Condition {Condition::type::symbols, {$symbol}};}
-    | MARKED                    {$$ = new Condition {Condition::type::marked, {}};}
-    | UNMARKED                  {$$ = new Condition {Condition::type::unmarked, {}};}
-    | condition[c] OR symbol
-    {
-        $$ = $c;
-        auto& a = $c -> symbols;
-
-        a.push_back($symbol); 
-    }
-    | condition[c] OR group_ref
-    {
-        $$ = $c;
-        auto& a = $c -> symbols;
-        auto& b = $group_ref -> symbols;
-
-        a.insert(a.end(), b.begin(), b.end());
-    }
-    ;
-
-block_ref:
+group_reference:
     IDENTIFIER
-    {
-        auto reference = blocks.find($IDENTIFIER);
-
-        if (reference == blocks.end()) {
-            Statement** pointer = new Statement* (nullptr);
-            const auto& [iterator, x] = blocks.insert({$IDENTIFIER, {pointer, @IDENTIFIER}});
-            reference = iterator;
-        }
-
-        $$ = reference -> second.first;
-    }
     ;
 
-group_ref:
+block_reference:
     IDENTIFIER
-    {
-        auto reference = groups.find($IDENTIFIER);
+    ;
 
-        if (reference != groups.end()) {
-            auto group = reference -> second;
-
-            $$ = new Condition {Condition::type::symbols, *group};
-        }
-
-        else throw syntax_error(@IDENTIFIER, "couldnt find group");
-    }
+newlines:
+    NEWLINE 
+    | newlines NEWLINE
+    | newlines
     ;
 %%
 

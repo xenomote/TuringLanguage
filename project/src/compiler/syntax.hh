@@ -9,12 +9,14 @@
 #include "machine.hh"
 
 struct program;
-struct condition;
 struct conditional;
 struct operation;
 
-using reference = std::string;
-using statement = std::variant<operation, conditional, reference, result>;
+using group_reference = std::string;
+using block_reference = std::string;
+using statement = std::variant<operation, conditional, block_reference, result>;
+using grouping = std::variant<std::set<symbol>, group_reference, bool>;
+using condition = std::set<grouping>;
 
 struct program
 {
@@ -23,26 +25,22 @@ struct program
     std::map<std::string, std::list<statement>> blocks;
 };
 
-struct condition
-{
-    std::set<symbol> symbols;
-};
-
 struct conditional
 {
     std::map<condition, std::list<statement>> conditions;
+    std::optional<std::list<statement>> else_condition;
 };
 
-struct while_loop   {condition condition;};
-struct until_loop   {condition condition;};
-struct repetition   {int repetitions;};
+struct while_loop   {condition predicate;};
+struct until_loop   {condition predicate;};
 
-using modifier = std::variant<while_loop, until_loop, repetition>;
+using modifier = std::variant<while_loop, until_loop, int>;
+using tape_write = std::variant<symbol, bool>;
 
 struct operation
 {
-    direction direction;
-    std::optional<symbol> write;
+    direction travel;
+    std::optional<tape_write> output;
     std::list<modifier> modifiers;
 };
 

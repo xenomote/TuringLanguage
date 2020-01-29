@@ -10,14 +10,17 @@ first:
     if _
         accept
     else
-        write X, go right, do cross
+        write X, go right
+        do cross
 
 cross:
     go right until start
     if _
-        go left until marked, do first
+        go left until marked
+        do first
     go right until start
     if _
         reject
     else 
-        write X, go right, do cross
+        write X, go right
+        do cross

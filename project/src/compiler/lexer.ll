@@ -60,6 +60,7 @@
 "unmarked"                  return token::UNMARKED;
 "left"                      return token::LEFT;
 "right"                     return token::RIGHT;
+"while"                     return token::WHILE;
 "until"                     return token::UNTIL;
 "times"                     return token::TIMES;
 "backwards"                 return token::BACKWARDS;

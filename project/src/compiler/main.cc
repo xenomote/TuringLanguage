@@ -48,14 +48,11 @@ int main(int argc, char** argv)
     //yyin.rdbuf(machine_file.rdbuf());
     yyin = m;
     
-    Statement* program = nullptr;
-    yy::Parser parser(program);
+    program output;
+    yy::Parser parser(output);
 
-    StringGenerator generator;
-
-    if (parser() == 0 && program != nullptr) {
-        generator.generate(*program);
-        cout << generator.output();
+    if (parser() == 0) {
+        cout << "success";
     }
 
     else {

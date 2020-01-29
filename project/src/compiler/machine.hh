@@ -17,6 +17,8 @@ struct symbol
 {
     bool marked;
     char symbol;
+
+    friend bool operator<(const struct symbol& a, const struct symbol& b);
 };
 
 struct State 
@@ -24,7 +26,7 @@ struct State
     std::string source;
     std::vector<char> write;
     std::vector<int> transition;
-    std::vector<direction> direction;
+    std::vector<direction> travel;
 };
 
 class Machine 
@@ -59,7 +61,7 @@ public:
             tape.push_back(blank);
         }
 
-        if (state -> direction[symbol] == left) {
+        if (state -> travel[symbol] == left) {
             if (head != tape.begin()) head--;
         } 
         
