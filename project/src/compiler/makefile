@@ -3,7 +3,7 @@ CXXFLAGS=-std=c++17 -Wall -Wextra -g -fmax-errors=5
 LINK.o=$(LINK.cc)
 
 YACC=bison
-YFLAGS=
+YFLAGS=--report=all
 
 LEX=flex
 LFLAGS=

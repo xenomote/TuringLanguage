@@ -1,10 +1,9 @@
 start = 0, _
-
 if _
-    reject
+    reject  
 go right until 0
-mark, go right, do first
-
+mark, go right
+do first
 first:
     go right until start
     if _
@@ -12,7 +11,6 @@ first:
     else
         write X, go right
         do cross
-
 cross:
     go right until start
     if _

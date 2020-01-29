@@ -21,6 +21,7 @@
     int indent = 0;
     int spaces = 0;
     int lines = 0;
+    bool dedent = false;
 %}
 
 %x SCOPE COMMENT
@@ -105,24 +106,29 @@
     yylloc -> columns(-1);
     yylloc -> step();
 
-    if (spaces == TAB * indent && lines == 0) BEGIN(INITIAL);
 
-    else if (spaces % TAB == 0 && spaces/TAB != indent) {
-        if (spaces > TAB * indent) {
-            indent++;
-            return token::INDENT;
-        }
-
-        else {
-            indent--;
-            return token::DEDENT;
-        }
+    if (spaces < TAB * indent) {
+        indent--;
+        dedent = true;
+        return token::DEDENT;
     }
 
     else if (lines > 0) {
         lines--;
         return token::NEWLINE;
     }
+
+    else if (spaces > TAB * indent) {
+        indent++;
+        return token::INDENT;
+    }
+
+    /*else if (dedent) {
+        dedent = false;
+        return token::NEWLINE;
+    }*/
+
+    else if (spaces == TAB * indent) BEGIN(INITIAL);
 
     else {
         throw yy::Parser::syntax_error(*yylloc, "mismatched indentation, tabs must be in groups of " + std::to_string(TAB));

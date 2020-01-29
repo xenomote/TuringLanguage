@@ -2,12 +2,14 @@
 
 %define parse.assert
 %define parse.error verbose
+%define parse.trace
 
 %locations
 %defines
 
 %define api.parser.class {Parser}
 
+%parse-param {std::string& filename}
 %parse-param {program& result}
 
 %code top
@@ -29,8 +31,6 @@
         yy::Parser::semantic_type* yylval,
         yy::Parser::location_type* yylloc
     );
-
-    std::string buffer = "";
 }
 
 %define api.value.type variant
@@ -67,6 +67,7 @@
 
 %type <std::map<condition, std::list<statement>>> cases
 %type <std::pair<condition, std::list<statement>>> if_case or_case
+%type <std::optional<std::list<statement>>> else_case
 
 %type <condition> condition
 %type <grouping> grouping
@@ -83,11 +84,10 @@
 %type <symbol> symbol
 %type <std::set<symbol>> symbols
 %type <std::string> block_reference group_reference
-
 %type <int> NUMBER
 
 %initial-action {
-    @$.begin.filename = @$.end.filename = new std::string("stdin");
+    @$.begin.filename = @$.end.filename = &filename;
 }
 
 %start program
@@ -103,18 +103,17 @@ program:
     ;
 
 groups: 
-    %empty                  {}
-    | group newlines                {$$ = {$group};}
-    | groups group newlines {$$ = $1; $$.insert($group);}
+    %empty                          {}
+    | groups group NEWLINE {$$ = $1; $$.insert($group);}
     ;
 
 blocks:  
-    %empty                  {}
-    | blocks block newlines {$$ = $1; $$.insert($block);}
+    %empty                          {}
+    | blocks block NEWLINE {$$ = $1; $$.insert($block);}
     ; 
 
 group: 
-    IDENTIFIER "=" condition  {$$ = {$IDENTIFIER, $condition};}
+    IDENTIFIER "=" condition    {$$ = {$IDENTIFIER, $condition};}
     ;
 
 block: 
@@ -122,12 +121,12 @@ block:
     ;
 
 scope: 
-    INDENT newlines statements DEDENT newlines {$$ = $statements;}
+    NEWLINE INDENT statements DEDENT NEWLINE    {$$ = $statements;}
     ;
 
 statements:
-    statement                       {$$ = {$statement};}
-    | statements newlines statement {$$ = $1; $$.push_back($statement);}
+    statement              {$$ = {$statement};}
+    | statements NEWLINE statement {$$ = $1; $$.push_back($statement);}
     ;
 
 statement:
@@ -139,21 +138,26 @@ statement:
     ;
 
 conditional:
-    cases                       {$$ = {$cases, {}};}
-    | cases ELSE scope {$$ = {$cases, $scope};}
-    ;
-
-cases:
-    if_case                 {$$ = {$if_case};}
-    | cases or_case   {$$ = $1; $$.insert($or_case);}
+    if_case  {}
+    if_case else_case {}
     ;
 
 if_case:
     IF condition scope  {$$ = {$condition, $scope};}
     ;
 
-or_case:
-    OR condition scope  {$$ = {$condition, $scope};}
+// cases:
+//     %empty                              {}
+//     | cases NEWLINE or_case    {$$ = $1; $$.insert($or_case);}
+//     ;
+
+// or_case:
+//     OR condition scope  {$$ = {$condition, $scope};}
+//     ;
+
+else_case:
+    %empty                                  {}
+    | ELSE NEWLINE scope   {$$ = $scope;}
     ;
 
 condition:
@@ -231,9 +235,8 @@ block_reference:
     ;
 
 newlines:
-    NEWLINE 
+    %empty
     | newlines NEWLINE
-    | newlines
     ;
 %%
 
