@@ -104,16 +104,16 @@ program:
 
 groups: 
     %empty                          {}
-    | groups group NEWLINE {$$ = $1; $$.insert($group);}
+    | groups group newlines {$$ = $1; $$.insert($group);}
     ;
 
 blocks:  
     %empty                          {}
-    | blocks block NEWLINE {$$ = $1; $$.insert($block);}
+    | blocks block newlines {$$ = $1; $$.insert($block);}
     ; 
 
 group: 
-    IDENTIFIER "=" condition    {$$ = {$IDENTIFIER, $condition};}
+    IDENTIFIER "=" condition NEWLINE    {$$ = {$IDENTIFIER, $condition};}
     ;
 
 block: 
@@ -121,43 +121,42 @@ block:
     ;
 
 scope: 
-    NEWLINE INDENT statements DEDENT NEWLINE    {$$ = $statements;}
+    INDENT newlines statements DEDENT    {$$ = $statements;}
     ;
 
 statements:
-    statement              {$$ = {$statement};}
-    | statements NEWLINE statement {$$ = $1; $$.push_back($statement);}
+    statement newlines              {$$ = {$statement};}
+    | statements statement newlines {$$ = $1; $$.push_back($statement);}
     ;
 
 statement:
-    conditional             {}
-    | operation             {}
-    | ACCEPT                {$$ = accept;}
-    | REJECTION             {$$ = reject;}
-    | DO block_reference    {$$ = $block_reference;}
+    conditional                     {$$ = $conditional;}
+    | operation NEWLINE             {$$ = $operation;}
+    | ACCEPT NEWLINE                {$$ = accept;}
+    | REJECTION NEWLINE             {$$ = reject;}
+    | DO block_reference NEWLINE    {$$ = $block_reference;}
     ;
 
 conditional:
-    if_case  {}
-    if_case else_case {}
+    cases else_case {$$ = {$cases, $else_case};}
+    ;
+
+cases:
+    if_case         {$$ = {$if_case};}
+    | cases or_case {$$ = $1; $$.insert($or_case);}
     ;
 
 if_case:
     IF condition scope  {$$ = {$condition, $scope};}
     ;
 
-// cases:
-//     %empty                              {}
-//     | cases NEWLINE or_case    {$$ = $1; $$.insert($or_case);}
-//     ;
-
-// or_case:
-//     OR condition scope  {$$ = {$condition, $scope};}
-//     ;
+or_case:
+    OR condition scope  {$$ = {$condition, $scope};}
+    ;
 
 else_case:
-    %empty                                  {}
-    | ELSE NEWLINE scope   {$$ = $scope;}
+    %empty          {$$ = {};}
+    | ELSE scope    {$$ = $scope;}
     ;
 
 condition:
@@ -188,7 +187,7 @@ operation:
     ;
 
 write: 
-    %empty                  {$$ = {};}
+    %empty                  {}
     | MARK COMMA            {$$ = true;}
     | UNMARK COMMA          {$$ = false;}
     | WRITE symbol COMMA    {$$ = $symbol;}
@@ -204,9 +203,9 @@ modifiers:
     ;
 
 modifier:
-    while_loop      {}
-    | until_loop    {}
-    | repetition    {}
+    while_loop      {$$ = $1;}
+    | until_loop    {$$ = $1;}
+    | repetition    {$$ = $1;}
     ;
 
 while_loop:

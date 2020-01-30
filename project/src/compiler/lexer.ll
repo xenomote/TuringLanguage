@@ -14,14 +14,16 @@
         yy::Parser::location_type* yylloc   \
     )
 
-
     typedef yy::Parser::token token;
     typedef yy::Parser::semantic_type value_type;
 
-    int indent = 0;
+    int indentation = 0;
     int spaces = 0;
     int lines = 0;
-    bool dedent = false;
+    bool newline = false;
+
+    int indent();
+    int dedent();
 %}
 
 %x SCOPE COMMENT
@@ -38,6 +40,7 @@
     // mark the beginning of a scope
     spaces = 0;
     lines = 1;
+    newline = true;
 
     yylloc -> lines();
 
@@ -107,28 +110,15 @@
     yylloc -> step();
 
 
-    if (spaces < TAB * indent) {
-        indent--;
-        dedent = true;
-        return token::DEDENT;
-    }
+    if (spaces > TAB * indentation)         return indent();
+    else if (spaces < TAB * indentation)    return dedent();
 
     else if (lines > 0) {
         lines--;
         return token::NEWLINE;
     }
 
-    else if (spaces > TAB * indent) {
-        indent++;
-        return token::INDENT;
-    }
-
-    /*else if (dedent) {
-        dedent = false;
-        return token::NEWLINE;
-    }*/
-
-    else if (spaces == TAB * indent) BEGIN(INITIAL);
+    else if (spaces == TAB * indentation) BEGIN(INITIAL);
 
     else {
         throw yy::Parser::syntax_error(*yylloc, "mismatched indentation, tabs must be in groups of " + std::to_string(TAB));
@@ -137,13 +127,10 @@
 
 <<EOF>> {   
     
-    if (indent > 0) {
-        indent--;
-        return token::DEDENT;
-    }
+    if (indentation > 0) return dedent();
 
-    if (indent == 0) {
-        indent--;
+    if (indentation == 0) {
+        indentation--;
         return token::NEWLINE;
     }
 
@@ -151,3 +138,21 @@
 }
 
 %%
+
+int dedent()
+{
+    if (newline) {
+        newline = false;
+        return token::NEWLINE;
+    }
+    lines = 0;
+    indentation--;
+    return token::DEDENT;
+}
+
+int indent()
+{
+    lines = 0;
+    indentation++;
+    return token::INDENT;
+}

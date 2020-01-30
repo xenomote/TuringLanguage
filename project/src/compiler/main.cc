@@ -60,7 +60,7 @@ int main(int argc, char** argv)
     }
 
     if (parser() == 0) {
-        cout << "success";
+        cout << "success" << endl;
     }
 
     else {
