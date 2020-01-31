@@ -52,7 +52,7 @@ int main(int argc, char** argv)
     
     program output;
 
-    yy::Parser parser(filename, output);
+    yy::parser parser(filename, output);
 
     if (debug) {
         parser.set_debug_stream(cout);
@@ -61,6 +61,8 @@ int main(int argc, char** argv)
 
     if (parser() == 0) {
         cout << "success" << endl;
+
+        ensure_exit(output);
     }
 
     else {

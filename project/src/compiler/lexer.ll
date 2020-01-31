@@ -10,12 +10,12 @@
 
     #define YY_USER_ACTION yylloc->columns (yyleng);
     #define YY_DECL int yylex(              \
-        yy::Parser::semantic_type* yylval,  \
-        yy::Parser::location_type* yylloc   \
+        yy::parser::semantic_type* yylval,  \
+        yy::parser::location_type* yylloc   \
     )
 
-    typedef yy::Parser::token token;
-    typedef yy::Parser::semantic_type value_type;
+    typedef yy::parser::token token;
+    typedef yy::parser::semantic_type value_type;
 
     int indentation = 0;
     int spaces = 0;
@@ -121,7 +121,7 @@
     else if (spaces == TAB * indentation) BEGIN(INITIAL);
 
     else {
-        throw yy::Parser::syntax_error(*yylloc, "mismatched indentation, tabs must be in groups of " + std::to_string(TAB));
+        throw yy::parser::syntax_error(*yylloc, "mismatched indentation, tabs must be in groups of " + std::to_string(TAB));
     }
 }
 

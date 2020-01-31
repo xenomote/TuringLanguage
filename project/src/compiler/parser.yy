@@ -7,7 +7,7 @@
 %locations
 %defines
 
-%define api.parser.class {Parser}
+%define api.parser.class {parser}
 
 %parse-param {std::string& filename}
 %parse-param {program& result}
@@ -28,8 +28,8 @@
 %code
 {
     extern int yylex(
-        yy::Parser::semantic_type* yylval,
-        yy::Parser::location_type* yylloc
+        yy::parser::semantic_type* yylval,
+        yy::parser::location_type* yylloc
     );
 }
 
@@ -54,20 +54,20 @@
 %type <program> program
 
 %type <std::map<std::string, condition>> groups
-%type <std::map<std::string, std::list<statement>>> blocks
+%type <std::map<std::string, statement_list>> blocks
 
 %type <std::pair<std::string, condition>> group
-%type <std::pair<std::string, std::list<statement>>> block
+%type <std::pair<std::string, statement_list>> block
 
 %type <statement> statement
-%type <std::list<statement>> statements scope
+%type <statement_list> statements scope
 
 %type <operation> operation
 %type <conditional> conditional
 
-%type <std::map<condition, std::list<statement>>> cases
-%type <std::pair<condition, std::list<statement>>> if_case or_case
-%type <std::optional<std::list<statement>>> else_case
+%type <std::list<std::pair<condition, statement_list>>> cases
+%type <std::pair<condition, statement_list>> if_case or_case
+%type <std::optional<statement_list>> else_case
 
 %type <condition> condition
 %type <grouping> grouping
@@ -125,8 +125,8 @@ scope:
     ;
 
 statements:
-    statement newlines              {$$ = {$statement};}
-    | statements statement newlines {$$ = $1; $$.push_back($statement);}
+    statement newlines              {$$ = {{$statement, @statement}};}
+    | statements statement newlines {$$ = $1; $$.push_back({$statement, @statement});}
     ;
 
 statement:
@@ -143,7 +143,7 @@ conditional:
 
 cases:
     if_case         {$$ = {$if_case};}
-    | cases or_case {$$ = $1; $$.insert($or_case);}
+    | cases or_case {$$ = $1; $$.push_back($or_case);}
     ;
 
 if_case:
@@ -167,7 +167,7 @@ condition:
     ;
 
 grouping:
-    group_reference             {}
+    group_reference             {$$ = $1;}
     | MARKED                    {$$ = true;}
     | UNMARKED                  {$$ = false;}
     ;
@@ -239,7 +239,7 @@ newlines:
     ;
 %%
 
-void yy::Parser::error(const location_type& l, const std::string& m)
+void yy::parser::error(const location_type& l, const std::string& m)
 {
     std::cerr << l << ": " << m << std::endl;
 }
