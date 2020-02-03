@@ -1,4 +1,5 @@
 start = 0, _
+second = X, _
 
 
 if _
@@ -10,8 +11,10 @@ do first
 
 first:
     go right until start  
-    if _
+    if X
         accept
+    or _
+        reject
     else
         write Y, go right
         do cross

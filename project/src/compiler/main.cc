@@ -63,6 +63,7 @@ int main(int argc, char** argv)
         cout << "success" << endl;
 
         ensure_exit(output);
+        ensure_distinct_conditions(output);
     }
 
     else {

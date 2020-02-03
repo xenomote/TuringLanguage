@@ -37,8 +37,8 @@ struct conditional
     std::optional<statement_list> else_condition;
 };
 
-struct while_loop   {condition predicate;};
-struct until_loop   {condition predicate;};
+struct while_loop {condition predicate;};
+struct until_loop {condition predicate;};
 
 using modifier = std::variant<while_loop, until_loop, int>;
 using tape_write = std::variant<symbol, bool>;
@@ -61,6 +61,10 @@ public:
     : runtime_error(msg(message, location))
     , message(message)
     , location(location)
+    {};
+
+    semantic_error(const std::string message)
+    : runtime_error(message)
     {};
 
 
@@ -86,5 +90,21 @@ void ensure_return(const conditional& c);
 bool is_exit_point(const statement_list& ss);
 bool is_exit_point(const statement_wrap& s);
 bool is_exit_point(const conditional& c);
+
+// check if condition overlap
+
+template<class T>
+bool intersect(const std::set<T>& a, const std::set<T>& b)
+{
+    for (auto& x : a)
+        if (b.count(x) > 0)
+            return true;
+
+    return false;
+}
+
+void ensure_distinct_conditions(const program& p);
+void ensure_distinct_conditions(const statement& p);
+void ensure_distinct_conditions(const conditional& c);
 
 #endif

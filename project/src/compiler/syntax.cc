@@ -96,6 +96,36 @@ bool is_exit_point(const conditional& c)
 
 // check if condition overlap
 
+void ensure_distinct_conditions(const program& p)
+{
+    for (auto& s : p.statements)
+        ensure_distinct_conditions(s.first);
+
+    for (auto& [name, ss] : p.blocks)
+        for (auto& s : ss)
+            ensure_distinct_conditions(s.first);
+}
+
+void ensure_distinct_conditions(const statement& p)
+{
+    std::visit(visitor {
+        [](const auto&) {},
+        [](const conditional& c) {ensure_distinct_conditions(c);},
+    }, p);
+}
+
+void ensure_distinct_conditions(const conditional& c)
+{
+    condition taken = {};
+
+    for (auto& [cond, s] : c.conditions) {  //!!! does not work !!!
+        if (intersect(taken, cond))
+            throw semantic_error("overlapping conditions");
+
+        taken.insert(cond.begin(), cond.end());
+    }
+}
+
 // check group references
 
 // check block references
