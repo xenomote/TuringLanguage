@@ -48,27 +48,29 @@ int main(int argc, char** argv)
     }
 
     //yyin.rdbuf(machine_file.rdbuf());
-    yyin = m;
-    
+
     program output;
 
     yy::parser parser(filename, output);
-
     if (debug) {
         parser.set_debug_stream(cout);
         parser.set_debug_level(true);
     }
 
-    if (parser() == 0) {
-        cout << "success" << endl;
+    if (m != NULL) {
+        yyin = m;
+        
+        if (parser() == 0) {
+            cout << "success" << endl;
 
-        ensure_exit(output);
-        ensure_distinct_conditions(output);
+            ensure_exit(output);
+            ensure_distinct_conditions(output);
+        }
+
+        else cout << "failure" << endl;
     }
 
-    else {
-        cout << "failure" << endl;
-    }
+    else cout << "could not open " << filename << endl;
 
     cout << "done" << endl;
 }

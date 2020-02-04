@@ -10,19 +10,39 @@
 #include "machine.hh"
 #include "location.hh"
 
+// template<class T>
+// struct syntax : public T
+// {
+//     syntax(const T& t, const yy::location& l) : T(t), source(l) {}
+//     syntax(T&& t, const yy::location&& l) : T(std::move(t)), source(std::move(l)){}
+
+//     yy::location source;
+// };
+
+template<class T>
+struct syntax
+{
+    T value;
+    yy::location source;
+
+    friend bool operator<(const struct syntax<T>& a, const struct syntax<T>& b)
+    {
+        return a.value < b.value;
+    }
+};
+
+
 struct program;
 struct conditional;
 struct operation;
 
-using group_reference = std::string;
-using block_reference = std::string;
+using reference = std::string;
 
-using statement = std::variant<operation, conditional, block_reference, result>;
-using statement_wrap = std::pair<statement, yy::location>;
-using statement_list = std::list<statement_wrap>;
+using statement = syntax<std::variant<operation, conditional, reference, result>>;
+using statement_list = std::list<statement>;
 
-using grouping = std::variant<std::set<symbol>, group_reference, bool>;
-using condition = std::set<grouping>;
+using grouping = std::variant<std::set<symbol>, reference, marking>;
+using condition = syntax<std::set<grouping>>;
 
 struct program
 {
@@ -84,11 +104,11 @@ void ensure_exit(const program& p);
 void ensure_exit(const statement_list& ss);
 
 void ensure_return(const statement_list& ss);
-void ensure_return(const statement_wrap& s);
+void ensure_return(const statement& s);
 void ensure_return(const conditional& c);
 
 bool is_exit_point(const statement_list& ss);
-bool is_exit_point(const statement_wrap& s);
+bool is_exit_point(const statement& s);
 bool is_exit_point(const conditional& c);
 
 // check if condition overlap

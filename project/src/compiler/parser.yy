@@ -83,7 +83,7 @@
 
 %type <symbol> symbol
 %type <std::set<symbol>> symbols
-%type <std::string> block_reference group_reference
+%type <std::string> reference
 %type <int> NUMBER
 
 %initial-action {
@@ -125,16 +125,16 @@ scope:
     ;
 
 statements:
-    statement newlines              {$$ = {{$statement, @statement}};}
-    | statements statement newlines {$$ = $1; $$.push_back({$statement, @statement});}
+    statement newlines              {$$ = {$statement};}
+    | statements statement newlines {$$ = $1; $$.push_back($statement);}
     ;
 
 statement:
-    conditional                     {$$ = $conditional;}
-    | operation NEWLINE             {$$ = $operation;}
-    | ACCEPT NEWLINE                {$$ = accept;}
-    | REJECTION NEWLINE             {$$ = reject;}
-    | DO block_reference NEWLINE    {$$ = $block_reference;}
+    conditional                     {$$ = {$conditional, @1};}
+    | operation NEWLINE             {$$ = {$operation, @1};}
+    | ACCEPT NEWLINE                {$$ = {accept, @1};}
+    | REJECTION NEWLINE             {$$ = {reject, @1};}
+    | DO reference NEWLINE    {$$ = {$reference, @1};}
     ;
 
 conditional:
@@ -160,16 +160,16 @@ else_case:
     ;
 
 condition:
-    grouping                {$$ = {$grouping};}
-    | symbols               {$$ = {$symbols};}
-    | condition OR grouping {$$ = $1; $$.insert($grouping);}
-    | condition OR symbols  {$$ = $1; $$.insert($symbols);}
+    grouping                {$$ = {{$grouping}, @1};}
+    | symbols               {$$ = {{$symbols}, @1};}
+    | condition OR grouping {$$ = $1; $$.value.insert($grouping);}
+    | condition OR symbols  {$$ = $1; $$.value.insert($symbols);}
     ;
 
 grouping:
-    group_reference             {$$ = $1;}
-    | MARKED                    {$$ = true;}
-    | UNMARKED                  {$$ = false;}
+    reference                   {$$ = $reference;}
+    | MARKED                    {$$ = marked;}
+    | UNMARKED                  {$$ = unmarked;}
     ;
 
 symbols: 
@@ -225,12 +225,8 @@ direction:
     | RIGHT {$$ = right;}
     ;
 
-group_reference:
-    IDENTIFIER
-    ;
-
-block_reference:
-    IDENTIFIER
+reference:
+    IDENTIFIER {$$ = $IDENTIFIER;}
     ;
 
 newlines:

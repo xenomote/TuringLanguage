@@ -11,7 +11,8 @@
 static const int blank = 0;
 
 enum direction {left, right};
-enum result {accept = true, reject = false};
+enum result {accept, reject};
+enum marking {marked, unmarked};
 
 struct symbol
 {

@@ -13,7 +13,7 @@ first:
     go right until start  
     if X
         accept
-    or _
+    or Y
         reject
     else
         write Y, go right
