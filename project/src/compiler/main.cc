@@ -61,10 +61,11 @@ int main(int argc, char** argv)
         yyin = m;
         
         if (parser() == 0) {
-            cout << "success" << endl;
-
             ensure_exit(output);
             ensure_distinct_conditions(output);
+            ensure_valid_references(output);
+
+            cout << "success" << endl;
         }
 
         else cout << "failure" << endl;

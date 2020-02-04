@@ -10,15 +10,6 @@
 #include "machine.hh"
 #include "location.hh"
 
-// template<class T>
-// struct syntax : public T
-// {
-//     syntax(const T& t, const yy::location& l) : T(t), source(l) {}
-//     syntax(T&& t, const yy::location&& l) : T(std::move(t)), source(std::move(l)){}
-
-//     yy::location source;
-// };
-
 template<class T>
 struct syntax
 {
@@ -124,7 +115,13 @@ bool intersect(const std::set<T>& a, const std::set<T>& b)
 }
 
 void ensure_distinct_conditions(const program& p);
-void ensure_distinct_conditions(const statement& p);
+void ensure_distinct_conditions(const statement& s);
 void ensure_distinct_conditions(const conditional& c);
+
+// check references
+
+void ensure_valid_references(const program& p);
+void ensure_valid_references(const program& p, const statement& s);
+void ensure_valid_references(const program& p, const conditional& c);
 
 #endif

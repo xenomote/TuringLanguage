@@ -123,3 +123,42 @@ void ensure_distinct_conditions(const conditional& c)
 }
 
 // check references
+
+void ensure_valid_references(const program& p)
+{
+    for (const auto& s : p.statements) {
+        ensure_valid_references(p, s);
+    }
+
+    for (const auto& block : p.blocks) {
+        std::cout << "hmm";
+        //for (const statement& s : block.second) {
+            //ensure_valid_references(p, s);
+        //}
+    }
+}
+
+void ensure_valid_references(const program& p, const statement& s)
+{
+    std::visit(visitor {
+        [](const auto&){},
+        [p, s](const reference& r) {
+            if (p.blocks.find(r) == p.blocks.end())
+                throw new semantic_error("unsatisfied reference to " + r, s.source);
+        },
+        [p](const conditional& c) {ensure_valid_references(p, c);},
+    }, s.value);
+}
+
+void ensure_valid_references(const program& p, const conditional& c)
+{
+    for (const auto& [cond, ss] : c.conditions)
+        for (const auto& g : cond.value)
+            std::visit(visitor {
+                [](const auto&) {},
+                [p, cond](const reference& r) {
+                    if (p.blocks.find(r) == p.blocks.end())
+                        throw new semantic_error("unsatisfied reference to " + r, cond.source);  
+                }
+            }, g);
+}

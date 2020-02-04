@@ -17,7 +17,7 @@ first:
         reject
     else
         write Y, go right
-        do cross
+        do crossses
 
 cross:
     go left until start
