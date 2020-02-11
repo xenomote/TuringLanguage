@@ -3,6 +3,8 @@
 #include <iostream>
 #include <fstream>
 
+#include <memory>
+
 #include "parser.yy.hh"
 #include "machine.hh"
 
@@ -13,14 +15,14 @@ static const char* ARG_STRING = "m:t:d";
 
 bool debug = false;
 
+using namespace std;
+
 int main(int argc, char** argv)
 {
-    using namespace std;
-
     int opt;
 
-    ifstream machine_file, tape_file;
-    machine_file.exceptions(ifstream::failbit | ifstream::badbit);
+    // ifstream machine_file, tape_file;
+    // machine_file.exceptions(ifstream::failbit | ifstream::badbit);
 
     string filename;
     FILE* m;
@@ -34,7 +36,7 @@ int main(int argc, char** argv)
                 break;
 
             case 't':
-                tape_file.open(optarg, ios::in);
+                //tape_file.open(optarg, ios::in);
                 break;
 
             case 'd':
@@ -68,7 +70,10 @@ int main(int argc, char** argv)
             cout << "success" << endl;
         }
 
+
         else cout << "failure" << endl;
+        
+        fclose(m);
     }
 
     else cout << "could not open " << filename << endl;

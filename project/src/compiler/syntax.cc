@@ -126,39 +126,60 @@ void ensure_distinct_conditions(const conditional& c)
 
 void ensure_valid_references(const program& p)
 {
-    for (const auto& s : p.statements) {
+    for (const auto& s : p.statements)
         ensure_valid_references(p, s);
-    }
 
-    for (const auto& block : p.blocks) {
-        std::cout << "hmm";
-        //for (const statement& s : block.second) {
-            //ensure_valid_references(p, s);
-        //}
-    }
+    for (const auto& [name, ss] : p.blocks)
+        for (const auto& s : ss)
+            ensure_valid_references(p, s);    
+}
+
+
+void ensure_valid_references(const program& p, const condition& c)
+{
+    for (const auto& g : c.value)
+        std::visit(visitor {
+            [](const auto&) {},
+            [p, c](const reference& r) {
+                if (p.groups.find(r) == p.groups.end())
+                    throw semantic_error("unsatisfied reference to " + r, c.source);  
+            }
+        }, g);
 }
 
 void ensure_valid_references(const program& p, const statement& s)
 {
     std::visit(visitor {
         [](const auto&){},
+        [p](const operation& o){ensure_valid_references(p, o);},
+        [p](const conditional& c) {ensure_valid_references(p, c);},
         [p, s](const reference& r) {
             if (p.blocks.find(r) == p.blocks.end())
-                throw new semantic_error("unsatisfied reference to " + r, s.source);
+                throw semantic_error("unsatisfied reference to " + r, s.source);
         },
-        [p](const conditional& c) {ensure_valid_references(p, c);},
     }, s.value);
 }
 
 void ensure_valid_references(const program& p, const conditional& c)
 {
-    for (const auto& [cond, ss] : c.conditions)
-        for (const auto& g : cond.value)
-            std::visit(visitor {
-                [](const auto&) {},
-                [p, cond](const reference& r) {
-                    if (p.blocks.find(r) == p.blocks.end())
-                        throw new semantic_error("unsatisfied reference to " + r, cond.source);  
-                }
-            }, g);
+    for (const auto& [cond, ss] : c.conditions) {
+        ensure_valid_references(p, cond);
+
+        for (const auto& s : ss)
+            ensure_valid_references(p, s);
+    }
+
+    if (c.else_condition.has_value())
+        for (const auto& s : c.else_condition.value())
+                ensure_valid_references(p, s);
+}
+
+void ensure_valid_references(const program& p, const operation& o)
+{
+    for (const auto& m : o.modifiers)
+        std::visit(visitor {
+            [](const auto&){},
+            [p](const while_loop& l){ensure_valid_references(p, l.predicate);},
+            [p](const until_loop& l){ensure_valid_references(p, l.predicate);},
+        }, m);
 }

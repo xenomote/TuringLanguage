@@ -9,19 +9,20 @@
 
 %define api.parser.class {parser}
 
-%parse-param {std::string& filename}
-%parse-param {program& result}
+%parse-param {std::string& filename} {program& result}
 
 %code top
 {
     #include <string>
     #include <sstream>
-    #include <list>
+    #include <vector>
     #include <map>
+    #include <memory>
 }
 
 %code requires
 {
+    #include <memory>
     #include "syntax.hh"
 }
 
@@ -65,7 +66,7 @@
 %type <operation> operation
 %type <conditional> conditional
 
-%type <std::list<std::pair<condition, statement_list>>> cases
+%type <std::vector<std::pair<condition, statement_list>>> cases
 %type <std::pair<condition, statement_list>> if_case or_case
 %type <std::optional<statement_list>> else_case
 
@@ -78,7 +79,7 @@
 
 %type <direction> travel direction
 %type <std::optional<tape_write>> write
-%type <std::list<modifier>> modifiers
+%type <std::vector<modifier>> modifiers
 %type <modifier> modifier
 
 %type <symbol> symbol
@@ -103,12 +104,12 @@ program:
     ;
 
 groups: 
-    %empty                          {}
+    %empty                          {$$ = {};}
     | groups group newlines {$$ = $1; $$.insert($group);}
     ;
 
 blocks:  
-    %empty                          {}
+    %empty                          {$$ = {};}
     | blocks block newlines {$$ = $1; $$.insert($block);}
     ; 
 
@@ -187,7 +188,7 @@ operation:
     ;
 
 write: 
-    %empty                  {}
+    %empty                  {$$ = {};}
     | MARK COMMA            {$$ = true;}
     | UNMARK COMMA          {$$ = false;}
     | WRITE symbol COMMA    {$$ = $symbol;}
@@ -198,7 +199,7 @@ travel:
     ;
 
 modifiers:
-    %empty                  {}
+    %empty                  {$$ = {};}
     | modifiers modifier    {$$ = $1; $$.push_back($modifier);}
     ;
 

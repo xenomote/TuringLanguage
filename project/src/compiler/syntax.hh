@@ -6,6 +6,7 @@
 #include <variant>
 #include <map>
 #include <set>
+#include <vector>
 
 #include "machine.hh"
 #include "location.hh"
@@ -30,7 +31,7 @@ struct operation;
 using reference = std::string;
 
 using statement = syntax<std::variant<operation, conditional, reference, result>>;
-using statement_list = std::list<statement>;
+using statement_list = std::vector<statement>;
 
 using grouping = std::variant<std::set<symbol>, reference, marking>;
 using condition = syntax<std::set<grouping>>;
@@ -44,7 +45,7 @@ struct program
 
 struct conditional
 {
-    std::list<std::pair<condition, statement_list>> conditions;
+    std::vector<std::pair<condition, statement_list>> conditions;
     std::optional<statement_list> else_condition;
 };
 
@@ -58,7 +59,7 @@ struct operation
 {
     direction travel;
     std::optional<tape_write> output;
-    std::list<modifier> modifiers;
+    std::vector<modifier> modifiers;
 };
 
 // error type
@@ -122,6 +123,8 @@ void ensure_distinct_conditions(const conditional& c);
 
 void ensure_valid_references(const program& p);
 void ensure_valid_references(const program& p, const statement& s);
+void ensure_valid_references(const program& p, const operation& o);
 void ensure_valid_references(const program& p, const conditional& c);
+void ensure_valid_references(const program& p, const condition& c);
 
 #endif

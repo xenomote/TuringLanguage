@@ -1,5 +1,6 @@
 CXX=g++
-CXXFLAGS=-std=c++17 -Wall -Wextra -g -fmax-errors=5
+CXXFLAGS=-std=c++17 -lstdc++ -Wall -Wextra -g #-O0
+#> txt 2>&1
 LINK.o=$(LINK.cc)
 
 YACC=bison
@@ -22,7 +23,7 @@ parser.o: parser.hh lexer.hh
 
 lexer.o: lexer.hh parser.yy.hh
 
-sytax.o: syntax.hh
+syntax.o: syntax.hh
 
 machine.o: machine.hh
 

@@ -8,16 +8,15 @@ go right until 0
 mark, go right
 do first
 
-
 first:
     go right until start  
-    if X
+    if start
         accept
     or Y
         reject
     else
         write Y, go right
-        do crossses
+        do cross
 
 cross:
     go left until start
