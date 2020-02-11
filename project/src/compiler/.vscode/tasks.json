@@ -17,7 +17,7 @@
         {
             "type": "shell",
             "label": "make",
-            "command" : "make"
+            "command" : "make -B"
         }
     ],
     "version": "2.0.0"

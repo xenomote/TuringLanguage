@@ -83,7 +83,6 @@
 %type <modifier> modifier
 
 %type <symbol> symbol
-%type <std::set<symbol>> symbols
 %type <std::string> reference
 %type <int> NUMBER
 
@@ -104,12 +103,12 @@ program:
     ;
 
 groups: 
-    %empty                          {$$ = {};}
+    %empty                  {$$ = {};}
     | groups group newlines {$$ = $1; $$.insert($group);}
     ;
 
 blocks:  
-    %empty                          {$$ = {};}
+    %empty                  {$$ = {};}
     | blocks block newlines {$$ = $1; $$.insert($block);}
     ; 
 
@@ -131,11 +130,11 @@ statements:
     ;
 
 statement:
-    conditional                     {$$ = {$conditional, @1};}
-    | operation NEWLINE             {$$ = {$operation, @1};}
-    | ACCEPT NEWLINE                {$$ = {accept, @1};}
-    | REJECTION NEWLINE             {$$ = {reject, @1};}
-    | DO reference NEWLINE    {$$ = {$reference, @1};}
+    conditional             {$$ = {$conditional, @1};}
+    | operation NEWLINE     {$$ = {$operation, @1};}
+    | ACCEPT NEWLINE        {$$ = {accept, @1};}
+    | REJECTION NEWLINE     {$$ = {reject, @1};}
+    | DO reference NEWLINE  {$$ = {$reference, @1};}
     ;
 
 conditional:
@@ -162,20 +161,14 @@ else_case:
 
 condition:
     grouping                {$$ = {{$grouping}, @1};}
-    | symbols               {$$ = {{$symbols}, @1};}
-    | condition OR grouping {$$ = $1; $$.value.insert($grouping);}
-    | condition OR symbols  {$$ = $1; $$.value.insert($symbols);}
+    | condition "," grouping {$$ = $1; $$.value.insert($grouping);}
     ;
 
 grouping:
-    reference                   {$$ = $reference;}
-    | MARKED                    {$$ = marked;}
-    | UNMARKED                  {$$ = unmarked;}
-    ;
-
-symbols: 
-    symbol                  {$$ = {$symbol};}
-    | symbols "," symbol    {$$ = $1; $$.insert($symbol);}
+    reference   {$$ = $reference;}
+    | symbol    {$$ = $symbol;}
+    | MARKED    {$$ = marked;}
+    | UNMARKED  {$$ = unmarked;}
     ;
 
 symbol: 

@@ -17,8 +17,8 @@ void ensure_exit(const program& p)
 {
     ensure_exit(p.statements);
 
-    for (const auto& b : p.blocks)
-        ensure_exit(b.second);
+    for (const auto& [name, ss] : p.blocks)
+        ensure_exit(ss);
 }
 
 void ensure_exit(const statement_list& ss)
@@ -95,30 +95,49 @@ bool is_exit_point(const conditional& c)
 void ensure_distinct_conditions(const program& p)
 {
     for (auto& s : p.statements)
-        ensure_distinct_conditions(s);
+        ensure_distinct_conditions(p, s);
 
     for (auto& [name, ss] : p.blocks)
         for (auto& s : ss)
-            ensure_distinct_conditions(s);
+            ensure_distinct_conditions(p, s);
 }
 
-void ensure_distinct_conditions(const statement& s)
+void ensure_distinct_conditions(const program& p, const statement& s)
 {
     std::visit(visitor {
         [](const auto&) {},
-        [](const conditional& c) {ensure_distinct_conditions(c);},
+        [p](const conditional& c) {ensure_distinct_conditions(p, c);},
     }, s.value);
 }
 
-void ensure_distinct_conditions(const conditional& c)
+void ensure_distinct_conditions(const program& p, const conditional& c)
 {
-    std::set<grouping> taken = {};
+    std::set<grouping> set = {};
 
-    for (auto& [cond, s] : c.conditions) {  //!!! does not work !!!
-        if (intersect(taken, cond.value))
-            throw semantic_error("condition overlaps preceeding cases", cond.source);
+    for (auto& [cond, s] : c.conditions) {
+        for (const auto& g : cond.value) {
+            std::visit(visitor {
+                [set, cond](const auto& a) {
+                    if (set.count(a) > 0)
+                        throw semantic_error("condition overlaps preceeding cases", cond.source);
+                },
 
-        taken.insert(cond.value.begin(), cond.value.end());
+                [&set, cond, p](const reference& r) {
+                    const auto& it = p.groups.find(r);
+                    const auto& c = it -> second;
+
+                    for (const auto& x : c.value) {
+                        if (set.count(x) > 0)
+                            throw semantic_error("condition overlaps preceeding cases", cond.source);
+
+                        set.insert(x);
+                    }
+                },
+            }, g);
+
+
+            set.insert(g);
+        }
     }
 }
 

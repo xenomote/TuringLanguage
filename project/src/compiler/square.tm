@@ -10,9 +10,9 @@ do first
 
 first:
     go right until start  
-    if start
+    if X
         accept
-    or Y
+    or second
         reject
     else
         write Y, go right

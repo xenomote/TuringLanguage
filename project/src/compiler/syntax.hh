@@ -33,7 +33,7 @@ using reference = std::string;
 using statement = syntax<std::variant<operation, conditional, reference, result>>;
 using statement_list = std::vector<statement>;
 
-using grouping = std::variant<std::set<symbol>, reference, marking>;
+using grouping = std::variant<symbol, reference, marking>;
 using condition = syntax<std::set<grouping>>;
 
 struct program
@@ -105,6 +105,18 @@ bool is_exit_point(const conditional& c);
 
 // check if condition overlap
 
+void ensure_distinct_conditions(const program& p);
+void ensure_distinct_conditions(const program& p, const statement& s);
+void ensure_distinct_conditions(const program& p, const conditional& c);
+
+// check references
+
+void ensure_valid_references(const program& p);
+void ensure_valid_references(const program& p, const statement& s);
+void ensure_valid_references(const program& p, const operation& o);
+void ensure_valid_references(const program& p, const conditional& c);
+void ensure_valid_references(const program& p, const condition& c);
+
 template<class T>
 bool intersect(const std::set<T>& a, const std::set<T>& b)
 {
@@ -114,17 +126,5 @@ bool intersect(const std::set<T>& a, const std::set<T>& b)
 
     return false;
 }
-
-void ensure_distinct_conditions(const program& p);
-void ensure_distinct_conditions(const statement& s);
-void ensure_distinct_conditions(const conditional& c);
-
-// check references
-
-void ensure_valid_references(const program& p);
-void ensure_valid_references(const program& p, const statement& s);
-void ensure_valid_references(const program& p, const operation& o);
-void ensure_valid_references(const program& p, const conditional& c);
-void ensure_valid_references(const program& p, const condition& c);
 
 #endif
