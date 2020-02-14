@@ -1,6 +1,5 @@
 CXX=g++
-CXXFLAGS=-std=c++17 -lstdc++ -Wall -Wextra -g #-O0
-#> txt 2>&1
+CXXFLAGS=-std=c++17 -lstdc++ -Wall -Wextra -g
 LINK.o=$(LINK.cc)
 
 YACC=bison
@@ -9,7 +8,7 @@ YFLAGS=--report=all
 LEX=flex
 LFLAGS=
 
-OBJECTS=main.o compiler.o lexer.o parser.o syntax.o machine.o
+OBJECTS=main.o compiler.o lexer.o parser.o syntax.o machine.o semantics.o
 
 #DEPENDENCIES
 
@@ -24,6 +23,8 @@ parser.o: parser.hh lexer.hh
 lexer.o: lexer.hh parser.yy.hh
 
 syntax.o: syntax.hh
+
+semantics.o: semantics.hh syntax.hh
 
 machine.o: machine.hh
 
