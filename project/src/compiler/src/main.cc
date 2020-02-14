@@ -6,6 +6,7 @@
 #include <memory>
 
 #include "parser.hh"
+#include "semantics.hh"
 #include "machine.hh"
 
 //extern std::istream yyin;
@@ -63,15 +64,20 @@ int main(int argc, char** argv)
         yyin = m;
         
         if (parser() == 0) {
-            ensure_exit(output);
-            ensure_distinct_conditions(output);
-            ensure_valid_references(output);
+            try {
+                ensure_exit(output);
+                ensure_distinct_conditions(output);
+                ensure_valid_references(output);
 
-            cout << "success" << endl;
+                cout << "success" << endl;
+            }
+
+            catch (semantic_error& e) {
+                cout << "compilation failed: " << e.what() << endl;
+            }
         }
 
-
-        else cout << "failure" << endl;
+        else cout << "failed to parse" << endl;
         
         fclose(m);
     }
