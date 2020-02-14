@@ -3,8 +3,7 @@
 %{
     #include <iostream>
 
-    #include "lexer.hh"
-    #include "parser.yy.hh"
+    #include "parser.hh"
 
     #define TAB 4
 

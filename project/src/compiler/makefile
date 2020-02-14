@@ -1,53 +1,63 @@
-CXX=g++
-CXXFLAGS=-std=c++17 -lstdc++ -Wall -Wextra -g #-O0
-#> txt 2>&1
-LINK.o=$(LINK.cc)
+SRC_DIR:=src
+INC_DIR:=inc
+GEN_DIR:=gen
+OBJ_DIR:=obj
 
-YACC=bison
-YFLAGS=--report=all
+GEN_FILES:=parser.cc parser.hh lexer.cc location.hh
 
-LEX=flex
-LFLAGS=
+SRC:=$(wildcard $(SRC_DIR)/*.cc)
+GEN:=$(GEN_FILES:%=$(GEN_DIR)/%)
+OBJ:=$(SRC:$(SRC_DIR)/%.cc=$(OBJ_DIR)/%.o) $(OBJ_DIR)/parser.o $(OBJ_DIR)/lexer.o
+OUT:=compiler.out
 
-OBJECTS=main.o compiler.o lexer.o parser.o syntax.o machine.o
+CXX:=g++
+CXXFLAGS:=-I$(SRC_DIR) -I$(INC_DIR) -I$(GEN_DIR) -I. 
+
+LDFLAGS:=-lstdc++
+CFLAGS:=-std=c++17 -Wall -Wextra -g
+
+YACC:=bison
+YFLAGS:=
+
+LEX:=flex
+LFLAGS:=
+
+.PHONY: all clean
+
+all: $(OUT)
 
 #DEPENDENCIES
 
-compiler: $(OBJECTS)
+$(OBJ_DIR)/main.o: $(GEN_DIR)/parser.cc
 
-main.o: parser.yy.hh
+$(OUT): $(OBJ)
+	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
 
-compiler.o: compiler.hh parser.hh lexer.hh
+#PATTERNS
 
-parser.o: parser.hh lexer.hh
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
 
-lexer.o: lexer.hh parser.yy.hh
+$(OBJ_DIR)/%.o: $(GEN_DIR)/%.cc | $(OBJ_DIR)
+	$(CXX) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
 
-syntax.o: syntax.hh
+#GENERATED SOURCES
 
-machine.o: machine.hh
+$(GEN_DIR)/lexer.cc: lexer.ll | $(GEN_DIR)
+	$(LEX) $(LFLAGS) -o $@ $< 
+
+$(GEN_DIR)/parser.cc $(GEN_DIR)/parser.hh: parser.yy | $(GEN_DIR)
+	$(YACC) $(YFLAGS) --defines=$(GEN_DIR)/parser.hh -o $(GEN_DIR)/parser.cc $<
+
+#DIRECTORIES
+
+$(OBJ_DIR):
+	@mkdir $(OBJ_DIR)
+
+$(GEN_DIR):
+	@mkdir $(GEN_DIR)
 
 #CLEANUP
 
 clean:
-	rm compiler stack.hh position.hh location.hh *.yy.* *.ll.* *.o *.gch
-
-#PATTERNS
-
-%.yy:
-%.ll:
-
-%.ll.cc: %.ll
-	$(LEX) $(LFLAGS) -o $*.ll.cc $< 
-
-%.yy.cc %.yy.hh: %.yy
-	$(YACC) $(YFLAGS) --defines=$*.yy.hh -o $*.yy.cc $<
-
-%.o: %.yy.cc
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-%.o: %.ll.cc
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
-
-%.o: %.cc
-	$(CXX) $(CXXFLAGS) -c -o $@ $<
+	$(RM) -d $(OUT) $(OBJ) $(GEN) $(OBJ_DIR) $(GEN_DIR)

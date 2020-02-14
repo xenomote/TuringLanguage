@@ -44,5 +44,6 @@ stack.hh
 #node modules
 node_modules
 
-#output file
-compiler
+#generated folders
+obj
+gen

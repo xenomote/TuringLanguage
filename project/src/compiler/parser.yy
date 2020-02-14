@@ -1,3 +1,5 @@
+%require "3.4.1"
+
 %language "c++"
 
 %define parse.assert
