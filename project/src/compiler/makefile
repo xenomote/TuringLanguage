@@ -27,7 +27,9 @@ all: $(OUT)
 
 #DEPENDENCIES
 
-$(OBJ_DIR)/main.o: $(GEN_DIR)/parser.cc
+$(OBJ_DIR)/main.o $(OBJ_DIR)/semantics.o: $(GEN_DIR)/parser.cc
+
+
 
 $(OUT): $(OBJ)
 	$(CXX) $(LDFLAGS) $^ -o $@
