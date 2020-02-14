@@ -11,8 +11,7 @@ OBJ:=$(SRC:$(SRC_DIR)/%.cc=$(OBJ_DIR)/%.o) $(OBJ_DIR)/parser.o $(OBJ_DIR)/lexer.
 OUT:=compiler.out
 
 CXX:=g++
-CXXFLAGS:=-I$(SRC_DIR) -I$(INC_DIR) -I$(GEN_DIR) -I. 
-
+CXXFLAGS:=-I$(SRC_DIR) -I$(INC_DIR) -I$(GEN_DIR) 
 LDFLAGS:=-lstdc++
 CFLAGS:=-std=c++17 -Wall -Wextra -g
 
@@ -31,7 +30,7 @@ all: $(OUT)
 $(OBJ_DIR)/main.o: $(GEN_DIR)/parser.cc
 
 $(OUT): $(OBJ)
-	$(CXX) $(CXXFLAGS) $(LDFLAGS) $^ -o $@
+	$(CXX) $(LDFLAGS) $^ -o $@
 
 #PATTERNS
 
