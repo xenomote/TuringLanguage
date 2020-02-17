@@ -37,7 +37,7 @@ struct state
 class machine 
 {
 public:
-    machine(std::vector<state> states, std::list<symbol> tape)
+    machine(std::list<state> states, std::list<symbol> tape)
     : tape(tape)
     , states(states)
     , head(begin(tape))
@@ -50,7 +50,7 @@ public:
 
 private:
     std::list<symbol> tape;
-    std::vector<state> states;
+    std::list<state> states;
 
     std::list<symbol>::iterator head;
     state* s;
