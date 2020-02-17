@@ -29,8 +29,6 @@ all: $(OUT)
 
 $(OBJ_DIR)/main.o $(OBJ_DIR)/semantics.o: $(GEN_DIR)/parser.cc
 
-
-
 $(OUT): $(OBJ)
 	$(CXX) $(LDFLAGS) $^ -o $@
 

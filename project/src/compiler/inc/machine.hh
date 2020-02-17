@@ -3,12 +3,14 @@
 
 #include <list>
 #include <vector>
+#include <memory>
+#include <map>
+#include <variant>
 
 #define TAPE_SIZE 1024
 #define MAX_INSTANCES 1024
 #define MAX_STEPS 1000000
 
-static const int blank = 0;
 
 enum direction {left, right};
 enum result {accept, reject};
@@ -22,54 +24,41 @@ struct symbol
     friend bool operator<(const struct symbol& a, const struct symbol& b);
 };
 
-struct State 
+static const symbol blank = {false, 0};
+
+struct state 
 {
     std::string source;
-    std::vector<char> write;
-    std::vector<int> transition;
-    std::vector<direction> travel;
+    std::map<symbol, symbol> write;
+    std::map<symbol, direction> travel;
+    std::map<symbol, std::variant<state*, result>> transition;
 };
 
-class Machine 
+class machine 
 {
-private:
-    std::list<int> tape;
-    std::vector<State> states;
-
-    std::list<int>::iterator head;
-    std::vector<State>::iterator state;
-
 public:
-    Machine(std::vector<State> states, std::list<int> tape)
+    machine(std::vector<state> states, std::list<symbol> tape)
     : tape(tape)
     , states(states)
     , head(begin(tape))
-    , state(begin(states))
+    , s(&*begin(states))
     {}
 
-    bool halted()
-    {
-        return state -> transition[*head] == 0;
-    }
+    void step();
+    void step(symbol& sym, state* next);
+    bool halted();
 
-    void step()
-    {
-        auto symbol = *head;
-        
-        *head = state -> write[symbol];
-        
-        if (head == prev(tape.end())) {
-            tape.push_back(blank);
-        }
+private:
+    std::list<symbol> tape;
+    std::vector<state> states;
 
-        if (state -> travel[symbol] == left) {
-            if (head != tape.begin()) head--;
-        } 
-        
-        else head++;
-
-        state = next(states.begin(), state -> transition[symbol]);
-    }
+    std::list<symbol>::iterator head;
+    state* s;
 };
+
+// allow anonymous visitor declaration
+
+template<class... Ts> struct visitor : Ts... { using Ts::operator()...; };
+template<class... Ts> visitor(Ts...) -> visitor<Ts...>;
 
 #endif
