@@ -2,14 +2,15 @@
 #define GENERATOR_H
 
 #include "machine.hh"
+#include "syntax.hh"
 
 class generator
 {
 public:
-     generate(program p);
+    void generate(program& p);
 
 private:
     
-}
+};
 
 #endif
