@@ -2,6 +2,7 @@
 #define GENERATOR_H
 
 #include <list>
+#include <variant>
 
 #include "machine.hh"
 #include "syntax.hh"
@@ -16,11 +17,13 @@ private:
     state generate(const operation& ss);
     state generate(const conditional& ss);
 
-    state result_state(result r, yy::location l);
+    std::list<state> states;
+    std::list<symbol> symbols;
 
+    std::list<state*> previous;
+    
     std::map<reference, state*> blocks;
     std::list<std::pair<state**, reference>> references;
-    std::list<symbol> symbols;
 };
 
 

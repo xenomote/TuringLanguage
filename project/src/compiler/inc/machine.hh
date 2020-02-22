@@ -19,7 +19,7 @@ enum marking {marked, unmarked};
 struct symbol
 {
     bool marked;
-    char symbol;
+    char character;
 
     friend bool operator<(const struct symbol& a, const struct symbol& b);
 };

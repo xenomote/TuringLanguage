@@ -23,7 +23,6 @@ struct syntax
     }
 };
 
-
 struct program;
 struct conditional;
 struct operation;
