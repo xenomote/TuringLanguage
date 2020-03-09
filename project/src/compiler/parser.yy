@@ -34,6 +34,8 @@
         yy::parser::semantic_type* yylval,
         yy::parser::location_type* yylloc
     );
+
+    std::set<symbol> symbols;
 }
 
 %define api.value.type variant
@@ -99,7 +101,9 @@
 program:
     groups statements blocks 
     {
-        $$ = {$statements, $groups, $blocks};
+        std::list<symbol> s (symbols.begin(), symbols.end());
+        
+        $$ = {$statements, $groups, $blocks, s};
         result = $$;
     }
     ;
@@ -174,8 +178,8 @@ grouping:
     ;
 
 symbol: 
-    SYMBOL          {$$ = {false, $SYMBOL};}
-    | MARKED SYMBOL {$$ = {true, $SYMBOL};}
+    SYMBOL          {$$ = {false, $SYMBOL}; symbols.insert($$);}
+    | MARKED SYMBOL {$$ = {true, $SYMBOL}; symbols.insert($$);}
     ;
 
 operation:

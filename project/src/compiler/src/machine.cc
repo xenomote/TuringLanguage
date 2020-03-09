@@ -5,9 +5,9 @@
 
 bool operator<(const symbol& a, const symbol& b)
 {
-    return (a.symbol == b.symbol) 
+    return (a.character == b.character) 
         ? !a.marked && b.marked
-        : a.symbol < b.symbol
+        : a.character < b.character
         ;  
 }
 

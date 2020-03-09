@@ -5,62 +5,52 @@
 
 std::list<state> generator::operator()(program& p)
 {
-    auto states = generate(p.statements);
+    state start = {};
+    std::list<state> states = {start};
 
-    for (auto& [name, ss] : p.blocks) {
-        auto block = generate(ss);
-        blocks.insert({name, &*block.begin()});
-        states.splice(states.end(), block);
+    std::list<std::variant<state*, result>*> predecessors = {};
+    std::map<reference, std::variant<state*, result>*> blocks = {};
+
+    for (const auto& s : p.symbols) {
+        predecessors.push_back(&start.transition[s]);
     }
 
-    for (const auto& [ref, name] : references)
-        *ref = blocks[name];
-
-    return states;
-}
-
-std::list<state> generator::generate(const statement_list& ss)
-{
-    for (const auto& s : ss) {
+    for (const auto& s : p.statements) {
         std::visit(visitor {
-            [&](const result& r){},
-            [&](const reference& r){},
-            [&](const operation& o){},
-            [&](const conditional& c){},
+            [&](const result& r) {
+                for (auto& s : predecessors) *s = r;
+            },
+
+            [&](const reference& r){
+                const auto& b = blocks.find(r);
+
+                if (b == blocks.end()) {
+                    const auto& b = blocks.emplace(r, reject);
+
+                    const auto& ss = p.blocks.find(r);
+                    
+                    generate(s, ss -> second);
+                }
+
+                for (auto& s : predecessors) *s = b -> second;
+            },
+
+            [&](const operation&){
+
+            },
+
+            [&](const conditional&){
+
+            },
+
+            [&](const auto&){},
         }, s.value);
     }
 
     return states;
 }
 
-state generator::generate(const operation& o)
-{
-    std::stringstream s;
-    s << "operation";
-
-    std::map<symbol, symbol> w;
-    std::map<symbol, direction> m;
-    std::map<symbol, std::variant<state*, result>> t; 
-
-    for (const auto& s : symbols) {
-        symbol out = !o.output.has_value() ? s : {};
-        
-        // std::visit(visitor {
-        //     [&](const symbol& sym){return sym;},
-        //     [&](bool m){return symbol {m, s.character};},
-        // }, o.output);
-
-        // w.insert({s, out})
-        // m.insert({s, o.travel});
-        // t.insert({s});
-    }
-
-    return {s.str(), w, m, t};
-}
-
-state generator::generate(const conditional& ss)
+std::list<state> generate(state& start, const std::list<state>& states)
 {
 
-
-    return {};
 }

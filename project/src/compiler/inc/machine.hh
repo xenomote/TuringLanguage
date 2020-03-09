@@ -26,12 +26,16 @@ struct symbol
 
 static const symbol blank = {false, 0};
 
+struct state;
+
+using successor = std::variant<state*, result>;
+
 struct state 
 {
     std::string source;
     std::map<symbol, symbol> write;
     std::map<symbol, direction> travel;
-    std::map<symbol, std::variant<state*, result>> transition;
+    std::map<symbol, successor> transition;
 };
 
 class machine 
