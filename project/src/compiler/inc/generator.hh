@@ -9,21 +9,14 @@
 
 class generator {
 public:
-    std::list<state> operator()(program& p);
+    std::list<state> operator()(const program& p);
 
 private:
-    std::list<state> generate(const statement_list& ss);
-
-    state generate(const operation& ss);
-    state generate(const conditional& ss);
+    void generate(const program& p, const statement_list& ss, state& start);
 
     std::list<state> states;
-    std::list<symbol> symbols;
-
-    std::list<state*> previous;
-    
-    std::map<reference, state*> blocks;
-    std::list<std::pair<state**, reference>> references;
+    std::map<reference, successor> blocks;
+    std::map<reference, std::list<successor*>> backpatch;
 };
 
 

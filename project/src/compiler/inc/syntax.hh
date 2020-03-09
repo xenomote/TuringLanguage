@@ -40,6 +40,7 @@ struct program
     statement_list statements;
     std::map<std::string, condition> groups;
     std::map<std::string, statement_list> blocks;
+    std::list<symbol> symbols;
 };
 
 struct conditional

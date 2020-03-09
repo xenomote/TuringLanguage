@@ -34,7 +34,7 @@ $(OUT): $(OBJ)
 
 #PATTERNS
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc | $(OBJ_DIR)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cc $(INC_DIR)/%.hh | $(OBJ_DIR)
 	$(CXX) $(CXXFLAGS) $(CFLAGS) -c $< -o $@
 
 $(OBJ_DIR)/%.o: $(GEN_DIR)/%.cc | $(OBJ_DIR)
