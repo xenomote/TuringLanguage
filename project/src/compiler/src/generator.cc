@@ -43,7 +43,7 @@ state generator::generate(const operation& o)
     std::map<symbol, std::variant<state*, result>> t; 
 
     for (const auto& s : symbols) {
-        symbol out = !o.output.has_value() ? s : {};
+        symbol out = !o.output.has_value() ? s : symbol {};
         
         // std::visit(visitor {
         //     [&](const symbol& sym){return sym;},

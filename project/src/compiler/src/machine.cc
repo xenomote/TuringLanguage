@@ -5,15 +5,15 @@
 
 bool operator<(const symbol& a, const symbol& b)
 {
-    return (a.symbol == b.symbol) 
+    return (a.character == b.character) 
         ? !a.marked && b.marked
-        : a.symbol < b.symbol
+        : a.character < b.character
         ;  
 }
 
 bool machine::halted()
 {
-    return true;//std::holds_alternative<result>(s.transition[*head]);
+    return std::holds_alternative<result>(s -> transition[*head]);
 }
 
 void machine::step()
