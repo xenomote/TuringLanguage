@@ -36,6 +36,11 @@
     );
 
     std::set<symbol> symbols;
+
+    void register_symbol(char c) {
+        symbols.insert({true, c});
+        symbols.insert({false, c});
+    }
 }
 
 %define api.value.type variant
@@ -100,10 +105,8 @@
 
 program:
     groups statements blocks 
-    {
-        std::list<symbol> s (symbols.begin(), symbols.end());
-        
-        $$ = {$statements, $groups, $blocks, s};
+    {        
+        $$ = {$statements, $groups, $blocks, symbols};
         result = $$;
     }
     ;
@@ -178,8 +181,8 @@ grouping:
     ;
 
 symbol: 
-    SYMBOL          {$$ = {false, $SYMBOL}; symbols.insert($$);}
-    | MARKED SYMBOL {$$ = {true, $SYMBOL}; symbols.insert($$);}
+    SYMBOL          {$$ = {false, $SYMBOL}; register_symbol($SYMBOL);}
+    | MARKED SYMBOL {$$ = {true, $SYMBOL}; register_symbol($SYMBOL);}
     ;
 
 operation:

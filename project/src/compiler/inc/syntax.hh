@@ -38,9 +38,9 @@ using condition = syntax<std::set<grouping>>;
 struct program
 {
     statement_list statements;
-    std::map<std::string, condition> groups;
-    std::map<std::string, statement_list> blocks;
-    std::list<symbol> symbols;
+    std::map<reference, condition> groups;
+    std::map<reference, statement_list> blocks;
+    std::set<symbol> symbols;
 };
 
 struct conditional

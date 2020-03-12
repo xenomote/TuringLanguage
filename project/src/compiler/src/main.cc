@@ -8,6 +8,7 @@
 #include "parser.hh"
 #include "semantics.hh"
 #include "machine.hh"
+#include "generator.hh"
 
 //extern std::istream yyin;
 extern FILE* yyin;
@@ -68,6 +69,20 @@ int main(int argc, char** argv)
                 ensure_exit(output);
                 ensure_distinct_conditions(output);
                 ensure_valid_references(output);
+
+                generator generate(output);
+
+                auto states = generate();
+                auto tape = {{false, '0'},{false, '0'}, {false, '0'}, blank};
+
+                machine m(states, tape);
+                int c = 0;
+
+                while (!m.halted()) {
+                    m.step();
+                    c++;
+                    cerr << "step " << c << endl;
+                } 
 
                 cout << "success" << endl;
             }

@@ -1,9 +1,9 @@
 start = 0, _
 second = X, _
 
-
 if _
     reject
+    
 go right until 0
 mark, go right
 do first
@@ -12,7 +12,7 @@ first:
     go right until start  
     if X
         accept
-    or second
+    or _
         reject
     else
         write Y, go right

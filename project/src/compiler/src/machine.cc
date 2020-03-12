@@ -5,40 +5,42 @@
 
 bool operator<(const symbol& a, const symbol& b)
 {
-    return (a.character == b.character) 
-        ? !a.marked && b.marked
-        : a.character < b.character
-        ;  
+    return std::tie(a.character, a.marked) < std::tie(b.character, b.marked);
+}
+
+bool operator==(const symbol& a, const symbol& b)
+{
+    return std::tie(a.character, a.marked) == std::tie(b.character, b.marked);
 }
 
 bool machine::halted()
 {
-    return std::holds_alternative<result>(s -> transition[*head]);
+    auto [out, travel, next] = 
+        s -> mapping
+        .at(*head);
+    return std::holds_alternative<result>(next);
 }
 
 void machine::step()
 {
-    auto sym = *head;
+    auto [out, travel, next] = s -> mapping.at(*head);
 
     std::visit(visitor {
-        [&](const auto next) {step(sym, next);},
-        [](const result) {},
-    }, s -> transition[sym]);
-}
+        [&](state* next){
+            if (head == prev(tape.end())) {
+                tape.push_back(blank);
+            }
 
-void machine::step(symbol& sym, state* next)
-{ 
-    *head = s -> write[sym];
+            if (travel == left) {
+                if (head != tape.begin()) --head;
+            } 
+            
+            else ++head;
+
+            s = next;
+        },
+
+        [&](result) {},
+    }, next);
     
-    if (head == prev(tape.end())) {
-        tape.push_back(blank);
-    }
-
-    if (s -> travel[sym] == left) {
-        if (head != tape.begin()) head--;
-    } 
-    
-    else head++;
-
-    s = next;
 }

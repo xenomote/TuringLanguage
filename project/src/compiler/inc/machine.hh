@@ -22,34 +22,44 @@ struct symbol
     char character;
 
     friend bool operator<(const struct symbol& a, const struct symbol& b);
+    friend bool operator==(const struct symbol& a, const struct symbol& b);
 };
 
-static const symbol blank = {false, 0};
+static const symbol blank = symbol {false, '_'};
 
 struct state;
 
 using successor = std::variant<state*, result>;
 
+struct transition
+{
+    symbol output;
+    direction travel;
+    successor next;
+};
+
 struct state 
 {
     std::string source;
-    std::map<symbol, symbol> write;
-    std::map<symbol, direction> travel;
-    std::map<symbol, successor> transition;
+    std::map<symbol, transition> mapping;
 };
 
 class machine 
 {
 public:
-    machine(std::list<state> states, std::list<symbol> tape)
-    : tape(tape)
-    , states(states)
-    , head(begin(tape))
-    , s(&*begin(states))
-    {}
+    machine(const std::list<state>& ss, const std::list<symbol>& t)
+    // : tape(t)
+    // , states{states}
+    // , head{tape.begin()}
+    // , s{&*states.begin()}
+    {
+        tape = t;
+        states = ss;
+        head = tape.begin();
+        s = &*ss.begin();
+    }
 
     void step();
-    void step(symbol& sym, state* next);
     bool halted();
 
 private:
@@ -57,7 +67,7 @@ private:
     std::list<state> states;
 
     std::list<symbol>::iterator head;
-    state* s;
+    const state * s;
 };
 
 // allow anonymous visitor declaration
