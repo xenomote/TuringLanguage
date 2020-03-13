@@ -1,29 +1,35 @@
-start = 0, _
+check = 0, _
 second = X, _
 
-if _
-    reject
-    
-go right until 0
-mark, go right
-do first
+if 0
+    mark, go right
+    do first
+reject
 
-first:
-    go right until start  
-    if X
-        accept
-    or _
-        reject
-    else
-        write Y, go right
-        do cross
+// just marked/crossed first 0
+first: 
+    go right until check 
 
-cross:
-    go left until start
+    // the only 0 seen was the first
     if _
-    	go right until marked
+        accept
+    
+    // continue to cross off 0s
+    write X, go right
+    do cross
+
+// start on even
+cross:
+    // check for even number of 0s
+    go right until check
+    if _
+    	go left until marked
         do first
-    go right until start
+    else
+        write X, go right
+
+    // check for odd number of 0s
+    go right until check
     if _
         reject
     else 

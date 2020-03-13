@@ -23,6 +23,7 @@ struct symbol
 
     friend bool operator<(const struct symbol& a, const struct symbol& b);
     friend bool operator==(const struct symbol& a, const struct symbol& b);
+    friend std::ostream& operator<<(std::ostream& out, const struct symbol& s);
 };
 
 static const symbol blank = symbol {false, '_'};
@@ -48,10 +49,6 @@ class machine
 {
 public:
     machine(const std::list<state>& ss, const std::list<symbol>& t)
-    // : tape(t)
-    // , states{states}
-    // , head{tape.begin()}
-    // , s{&*states.begin()}
     {
         tape = t;
         states = ss;
@@ -60,7 +57,9 @@ public:
     }
 
     void step();
-    bool halted();
+    bool halted() const;
+
+    friend std::ostream& operator<<(std::ostream& out, const machine& m);
 
 private:
     std::list<symbol> tape;

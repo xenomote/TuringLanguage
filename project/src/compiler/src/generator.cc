@@ -1,3 +1,5 @@
+#include <sstream>
+
 #include "generator.hh"
 #include "syntax.hh"
 
@@ -10,6 +12,7 @@ std::list<state> generator::operator()()
     }
 
     auto& start = states.emplace_back();
+    start = {"start", {}};
     auto outputs = make_mapping(start.mapping);
     generate(p.statements, outputs);
 
@@ -33,10 +36,12 @@ mapping generator::generate(const statement_list& ss, mapping& outputs)
 
                 if (patches.empty()) {
                     patches = outputs;
-                    const auto& ss = p.blocks.find(r);
-                    auto& i = blocks[r];
-                    auto m = make_mapping(i);
-                    auto out = generate(ss -> second, m);
+
+                    const auto& [_, statements] = *p.blocks.find(r);
+                    auto& inputs = blocks[r];
+                    auto map = make_mapping(inputs);
+                    
+                    generate(statements, map);
                 }
 
                 else patches = merge({patches, outputs});
@@ -45,15 +50,24 @@ mapping generator::generate(const statement_list& ss, mapping& outputs)
             },
 
             [&](const operation& o){
+                // IMPLEMENT MODIFIERS
+
                 auto& current = states.emplace_back();
+                std::stringstream name;
+                name << "line " << s.source.begin.line;
+                current = {name.str(), {}};
                 connect(outputs, o.travel, &current);
+
+                if (o.output.has_value())
+                    set_outputs(outputs, o.output.value());
+
                 outputs = make_mapping(current.mapping);
             },
 
             [&](const conditional& c){
                 mapping condition_outputs;
 
-                for (const auto& [cond, cond_ss] : c.conditions) {
+                for (const auto& [cond, condition_statements] : c.conditions) {
                     std::set<symbol> condition_symbols;
 
                     for (const auto& g : cond.value) {
@@ -62,19 +76,19 @@ mapping generator::generate(const statement_list& ss, mapping& outputs)
                     }
 
                     mapping entry_points;
-                    for (const auto& s : condition_symbols) {
-                        const auto& output = outputs[s];
-                        entry_points.insert({s, output});
-                        outputs.erase(s);
+                    for (const auto& sym : condition_symbols) {
+                        auto& output = outputs[sym];
+                        entry_points.insert({sym, output});
+                        outputs.erase(sym);
                     }
                     
-                    auto exit_points = generate(cond_ss, entry_points);
+                    auto exit_points = generate(condition_statements, entry_points);
                     condition_outputs = merge({condition_outputs, exit_points});
                 }
 
                 if (c.else_condition.has_value()) {
-                    auto cond_ss = c.else_condition.value();
-                    auto exit_points = generate(cond_ss, outputs);
+                    auto condition_statements = c.else_condition.value();
+                    auto exit_points = generate(condition_statements, outputs);
                     condition_outputs = merge({condition_outputs, exit_points});
                 }
 
@@ -104,6 +118,24 @@ void generator::connect(const mapping& outputs, direction travel, const successo
             *output = {write, travel, next};
 }
 
+void generator::set_outputs(const mapping& outputs, const tape_write& write)
+{
+    std::visit(visitor {
+        [&](symbol sym)
+        {
+            for (auto& [_, outs] : outputs)
+                for (auto& out : outs)
+                    out -> output = sym;
+        },
+
+        [&](bool mark)
+        {
+            for (auto& [sym, outs] : outputs)
+                for (auto& out : outs)
+                    out -> output = {mark, sym.character};
+        },
+    }, write);
+}
 
 mapping generator::make_mapping(interface& inputs)
 {
@@ -145,7 +177,7 @@ std::set<symbol> generator::generate_grouping(const grouping& g)
             s.insert(t.begin(), t.end());
         },
 
-        [&](const marking& m)
+        [&](marking m)
         {
             for (const auto& sym : p.symbols)
                 if (sym.marked == m)

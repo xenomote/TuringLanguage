@@ -19,11 +19,12 @@ private:
     mapping generate(const statement_list& ss, mapping& outputs);
 
     mapping make_mapping(interface& inputs);
+    mapping merge(const std::set<mapping>& outputs);
 
     void connect(const mapping& outputs, const interface& input);
     void connect(const mapping& outputs, direction travel, const successor& next);
 
-    mapping merge(const std::set<mapping>& outputs);
+    void set_outputs(const mapping& outputs, const tape_write& write);
 
     std::set<symbol> generate_grouping(const grouping& g);
 

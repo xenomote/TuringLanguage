@@ -23,22 +23,17 @@ int main(int argc, char** argv)
 {
     int opt;
 
-    // ifstream machine_file, tape_file;
-    // machine_file.exceptions(ifstream::failbit | ifstream::badbit);
-
     string filename;
     FILE* m;
 
     while ((opt = getopt(argc, argv, ARG_STRING)) > -1) {
         switch (opt) {
             case 'm':
-                //machine_file.open(optarg, ios::in);
                 filename = optarg;
                 m = fopen(optarg, "r");
                 break;
 
             case 't':
-                //tape_file.open(optarg, ios::in);
                 break;
 
             case 'd':
@@ -50,8 +45,6 @@ int main(int argc, char** argv)
                 exit(EXIT_FAILURE);
         }
     }
-
-    //yyin.rdbuf(machine_file.rdbuf());
 
     program output;
 
@@ -72,32 +65,30 @@ int main(int argc, char** argv)
 
                 generator generate(output);
 
-                auto states = generate();
-                auto tape = {{false, '0'},{false, '0'}, {false, '0'}, blank};
+                list<state> states = generate();
+                list<symbol> tape = {{false, '0'},{false, '0'}, {false, '0'}};
 
                 machine m(states, tape);
                 int c = 0;
 
                 while (!m.halted()) {
+                    cout << "step " << c << ": " << m << endl;
                     m.step();
                     c++;
-                    cerr << "step " << c << endl;
                 } 
 
-                cout << "success" << endl;
+                cout << "step " << c << ": " << m << endl;
             }
 
             catch (semantic_error& e) {
-                cout << "compilation failed: " << e.what() << endl;
+                cerr << "compilation failed: " << e.what() << endl;
             }
         }
 
-        else cout << "failed to parse" << endl;
+        else cerr << "failed to parse" << endl;
         
         fclose(m);
     }
 
-    else cout << "could not open " << filename << endl;
-
-    cout << "done" << endl;
+    else cerr << "could not open " << filename << endl;
 }
