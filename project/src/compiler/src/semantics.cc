@@ -198,7 +198,6 @@ void ensure_valid_references(const program& p, const operation& o)
     for (const auto& m : o.modifiers)
         std::visit(visitor {
             [](const auto&){},
-            [p](const while_loop& l){ensure_valid_references(p, l.predicate);},
-            [p](const until_loop& l){ensure_valid_references(p, l.predicate);},
+            [p](const loop& l){ensure_valid_references(p, l.predicate);},
         }, m);
 }

@@ -7,8 +7,8 @@
 #include "machine.hh"
 #include "syntax.hh"
 
-using mapping = std::map<symbol, std::set<transition*>>;
-using interface = std::map<symbol, transition>;
+using mapping = std::map<symbol, std::set<successor*>>;
+using interface = std::map<symbol, successor>;
 
 class generator {
 public:
@@ -18,15 +18,19 @@ public:
 private:
     mapping generate(const statement_list& ss, mapping& outputs);
 
-    mapping make_mapping(interface& inputs);
+    interface make_interface(const successor& target);
+    mapping make_mapping(state& target);
+    mapping make_mapping(interface& target);
+
     mapping merge(const std::set<mapping>& outputs);
 
     void connect(const mapping& outputs, const interface& input);
-    void connect(const mapping& outputs, direction travel, const successor& next);
 
-    void set_outputs(const mapping& outputs, const tape_write& write);
+    void set_outputs(state& state, const std::optional<tape_write>& write);
+    void set_travel(state& state, direction travel);
+    void set_next(state& state, const successor& next);
 
-    std::set<symbol> generate_grouping(const grouping& g);
+    std::set<symbol> generate_grouping(const std::set<grouping>& groups);
 
     const program& p;
     

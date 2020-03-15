@@ -49,10 +49,9 @@ struct conditional
     std::optional<statement_list> else_condition;
 };
 
-struct while_loop {condition predicate;};
-struct until_loop {condition predicate;};
+struct loop {condition predicate; bool inverted;};
 
-using modifier = std::variant<while_loop, until_loop, int>;
+using modifier = std::variant<loop, int>;
 using tape_write = std::variant<symbol, bool>;
 
 struct operation

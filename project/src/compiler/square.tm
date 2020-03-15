@@ -1,6 +1,13 @@
 check = 0, _
 second = X, _
 
+mark, go right
+go right until _
+write X, go left 
+go left until marked
+accept
+
+/*
 if 0
     mark, go right
     do first
@@ -25,13 +32,10 @@ cross:
     if _
     	go left until marked
         do first
-    else
-        write X, go right
-
-    // check for odd number of 0s
+    write X, go right
     go right until check
     if _
         reject
-    else 
-        write X, go right
-        do cross
+    write X, go right
+    do cross
+*/

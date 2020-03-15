@@ -82,8 +82,7 @@
 %type <condition> condition
 %type <grouping> grouping
 
-%type <until_loop> until_loop
-%type <while_loop> while_loop
+%type <loop> loop
 %type <int> repetition
 
 %type <direction> travel direction
@@ -206,17 +205,13 @@ modifiers:
     ;
 
 modifier:
-    while_loop      {$$ = $1;}
-    | until_loop    {$$ = $1;}
+    loop      {$$ = $1;}
     | repetition    {$$ = $1;}
     ;
 
-while_loop:
-    WHILE condition {$$ = {$condition};}
-    ;
-
-until_loop:
-    UNTIL condition {$$ = {$condition};}
+loop:
+    UNTIL condition {$$ = {$condition, true};}
+    | WHILE condition {$$ = {$condition, false};}
     ;
 
 repetition: 
