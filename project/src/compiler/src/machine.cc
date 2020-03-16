@@ -36,20 +36,20 @@ std::ostream& operator<<(std::ostream& out, const machine& m)
     std::visit(visitor {
         [&](state* s)   {out << " -> " << s -> source;},
         [&](result r)   {out << (r == reject ? " [REJECT]" : " [ACCEPT]");},
-    }, m.s -> mapping.at(*m.head).next);
+    }, m.s -> transitions.at(*m.head).next);
 
     return out;
 }
 
 bool machine::halted() const
 {
-    auto [out, travel, next] = s -> mapping.at(*head);
+    auto [out, travel, next] = s -> transitions.at(*head);
     return std::holds_alternative<result>(next);
 }
 
 void machine::step()
 {
-    auto [out, travel, next] = s -> mapping.at(*head);
+    auto [out, travel, next] = s -> transitions.at(*head);
 
     std::visit(visitor {
         [&](state* next)

@@ -7,8 +7,7 @@
 #include "machine.hh"
 #include "syntax.hh"
 
-using mapping = std::map<symbol, std::set<successor*>>;
-using interface = std::map<symbol, successor>;
+using interface = std::map<state*, std::set<symbol>>;
 
 class generator {
 public:
@@ -16,19 +15,21 @@ public:
     std::list<state> operator()();
 
 private:
-    mapping generate(const statement_list& ss, mapping& outputs);
+    interface generate(const statement_list& ss, interface& inputs);
 
-    interface make_interface(const successor& target);
-    mapping make_mapping(state& target);
-    mapping make_mapping(interface& target);
+    interface make_interface(state& target);
+    interface make_interface(mapping& target);
 
-    mapping merge(const std::set<mapping>& outputs);
+    mapping empty_mapping();
 
-    void connect(const mapping& outputs, const interface& input);
+    void add_all(interface& outputs, const interface& others);
 
-    void set_outputs(state& state, const std::optional<tape_write>& write);
-    void set_travel(state& state, direction travel);
-    void set_next(state& state, const successor& next);
+    void connect(interface& outputs, const successor& target);
+    void connect(interface& outputs, const mapping& target);
+
+
+    void set_outputs(const interface& outputs, const std::optional<tape_write>& write);
+    void set_travel(const interface& ouptuts, direction travel);
 
     std::set<symbol> generate_grouping(const std::set<grouping>& groups);
 
@@ -36,8 +37,8 @@ private:
     
     std::list<state> states;
     std::map<reference, std::set<symbol>> groups;
-    std::map<reference, interface> blocks;
-    std::map<reference, mapping> backpatch;
+    std::map<reference, mapping> blocks;
+    std::map<reference, interface> backpatch;
 };
 
 

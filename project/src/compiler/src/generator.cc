@@ -9,41 +9,42 @@ std::list<state> generator::operator()()
         groups[r] = generate_grouping(cond.value);
     }
 
-    mapping start;
-    generate(p.statements, start);
+    auto& start = states.emplace_back();
+    std::stringstream name;
+    name << "start";
+    start = {name.str(), {}};
 
-    for(const auto& [ref, outputs] : backpatch)
+    interface map = make_interface(start);
+    generate(p.statements, map);
+
+    for(auto& [ref, outputs] : backpatch)
         connect(outputs, blocks[ref]);
     
     return states;
 }
 
-mapping generator::generate(const statement_list& ss, mapping& outputs)
+interface generator::generate(const statement_list& ss, interface& outputs)
 {
     for (const auto& s : ss) {
         std::visit(visitor {
             [&](const result& res) {
-                auto inputs = make_interface(res);
-                connect(outputs, inputs);            
-                outputs.clear();
+                connect(outputs, res);            
+                outputs = {};
             },
 
-            [&](const reference& r){
-                auto& patches = backpatch[r];
+            [&](const reference& ref){
+                if (blocks.find(ref) == blocks.end()) {
+                    const auto& statements = p.blocks.at(ref);
 
-                if (patches.empty()) {
-                    patches = outputs;
+                    state dummy = {"", empty_mapping()};
+                    blocks[ref] = dummy.transitions;
+                    auto inputs = make_interface(dummy);
 
-                    const auto& [_, statements] = *p.blocks.find(r);
-                    auto& inputs = blocks[r];
-                    auto map = make_mapping(inputs);
-                    
-                    generate(statements, map);
+                    generate(statements, inputs);
                 }
 
-                else patches = merge({patches, outputs});
-                
-                outputs.clear();
+                add_all(backpatch[ref], outputs);
+                outputs = {};
             },
 
             [&](const operation& o){
@@ -53,12 +54,12 @@ mapping generator::generate(const statement_list& ss, mapping& outputs)
                     name << "line " << s.source.begin.line;
                     current = {name.str(), {}};
 
-                    set_outputs(current, o.output);
-                    set_travel(current, o.travel);
+                    set_outputs(outputs, o.output);
+                    set_travel(outputs, o.travel);
 
-                    connect(outputs, make_interface(&current));
+                    connect(outputs, &current);
 
-                    outputs = make_mapping(current);
+                    outputs = make_interface(current);
                 }
 
                 // THIS DOES NOT WORK
@@ -66,44 +67,20 @@ mapping generator::generate(const statement_list& ss, mapping& outputs)
                     std::visit(visitor {
                         [&](loop l)
                         {
-                            auto& current = states.emplace_back();
-                            std::stringstream name;
-                            name << "line " << s.source.begin.line << " loop";
-                            current = {name.str(), {}};
-                            
-                            set_outputs(current, o.output);
-                            set_travel(current, o.travel);
+                            auto g = generate_grouping({l.predicate.value});
 
-                            auto g = generate_grouping(l.predicate.value);
+                            set_outputs(outputs, o.output);
+                            set_travel(outputs, o.travel);
 
-                            // connect the predecessor to the loop state
-                            mapping loop_inputs;
-                            for (auto& sym : p.symbols) {
-                                if (g.count(sym) ^ l.inverted) {
-                                    auto& output = outputs[sym];
-                                    loop_inputs.insert({sym, output});
-                                    outputs.erase(sym);
-                                }
-                            }
+                            interface loop_outputs;
+                            for (auto& [target, symbols] : outputs)
+                                for (auto& sym : symbols)
+                                    if (g.count(sym) ^ l.inverted)
+                                        target -> transitions[sym].next = target;
+                                    else
+                                        loop_outputs[target].insert(sym);
 
-                            connect(loop_inputs, make_interface(&current));
-                            auto loop_outputs = make_mapping(current);
-
-                            // connect the loop state to itself
-                            mapping loop_cycle;
-                            for (auto& sym : p.symbols) {
-                                if (g.count(sym) ^ l.inverted) {
-                                    auto& output = loop_outputs[sym];
-                                    loop_cycle.insert({sym, output});
-                                    loop_outputs.erase(sym);
-                                }
-                            }
-
-                            // TRAVEL OUT OF LOOP STATE MUST BE BACKPATCHED BY SUBSEQUENT STATE
-
-                            connect(loop_cycle, make_interface(&current));
-
-                            outputs = merge({outputs, loop_outputs});
+                            outputs = loop_outputs;
                         },
 
                         [&](int i)
@@ -115,33 +92,32 @@ mapping generator::generate(const statement_list& ss, mapping& outputs)
             },
 
             [&](const conditional& c){
-                mapping condition_outputs;
+                interface condition_outputs;
                 for (const auto& [cond, condition_statements] : c.conditions) {
                     std::set<symbol> condition_symbols = generate_grouping({cond.value});
 
-                    mapping entry_points;
-                    for (const auto& sym : condition_symbols) {
-                        auto& output = outputs[sym];
-                        entry_points.insert({sym, output});
-                        outputs.erase(sym);
-                    }
+                    interface entry_points;
+                    for (auto& [target, symbols] : outputs)
+                        for (const auto& sym : symbols)
+                            if (condition_symbols.count(sym)) {
+                                symbols.erase(sym);
+                                entry_points[target].insert(sym);
+                            }
                     
                     auto exit_points = generate(condition_statements, entry_points);
-                    condition_outputs = merge({condition_outputs, exit_points});
+                    
+                    add_all(condition_outputs, exit_points);
                 }
 
                 if (c.else_condition.has_value()) {
                     auto condition_statements = c.else_condition.value();
                     auto exit_points = generate(condition_statements, outputs);
-                    outputs = {};
-                    condition_outputs = merge({condition_outputs, exit_points});
+                    outputs = exit_points;
                 }
 
-                else {
-                    condition_outputs = merge({condition_outputs, outputs});
-                }
+                add_all(condition_outputs, outputs);
 
-                outputs = merge({outputs, condition_outputs});
+                outputs = condition_outputs;
             },
         }, s.value);
     }
@@ -149,59 +125,69 @@ mapping generator::generate(const statement_list& ss, mapping& outputs)
     return outputs;
 }
 
-void generator::connect(const mapping& outputs, const interface& inputs)
+void generator::connect(interface& outputs, const successor& target)
 {
-    for (const auto& [sym, output_set] : outputs)
-        for (const auto& output : output_set)
-            *output  = inputs.at(sym);
+    for (auto& [source, symbols] : outputs)
+        for (auto& sym : symbols)
+            source -> transitions[sym].next = target;
 }
 
-void generator::set_outputs(state& state, const std::optional<tape_write>& write)
+void generator::connect(interface& outputs, const mapping& inputs)
+{
+    for (auto& [source, symbols] : outputs)
+        for (auto& sym : symbols)
+            source -> transitions[sym] = inputs.at(sym);
+}
+
+void generator::set_outputs(const interface& outputs, const std::optional<tape_write>& write)
 {
     if (write.has_value()) std::visit(visitor {
-        [&](symbol out) {for (auto& in : p.symbols) state.mapping[in].output = out;},
-        [&](bool mark)  {for (auto& in : p.symbols) state.mapping[in].output = {mark, in.character};},
+        [&](symbol out) 
+        {
+            for (auto& [source, symbols] : outputs) 
+                for (auto& sym : symbols)
+                    source -> transitions[sym].output = out;
+        },
+
+        [&](bool mark) 
+        {
+            for (auto& [source, symbols] : outputs) 
+                for (auto& sym : symbols)
+                    source -> transitions[sym].output = {mark, sym.character};
+        },
     }, write.value());
 
-    else for (auto& in : p.symbols) state.mapping[in].output = in;
+    else for (auto& [source, symbols] : outputs) 
+        for (auto& sym : symbols)
+            source -> transitions[sym].output = sym;
 }
 
-void generator::set_travel(state& state, direction travel)
+void generator::set_travel(const interface& outputs, direction travel)
 {
-    for (auto& in : p.symbols) state.mapping[in].travel = travel;
+    for (auto& [source, symbols] : outputs) 
+        for (auto& sym : symbols)
+            source -> transitions[sym].travel = travel;
 }
 
 
-interface generator::make_interface(const successor& target)
+interface generator::make_interface(state& target)
 {
-    interface inputs;
-    for (auto sym : p.symbols) inputs[sym] = target;
-    return inputs;
-}
-
-mapping generator::make_mapping(state& target)
-{
-    mapping outputs;
-    for (auto& [sym, output] : target.mapping) outputs[sym] = {&output.next};
+    interface outputs;
+    outputs[&target] = p.symbols;
     return outputs;
 }
 
-mapping generator::make_mapping(interface& target)
+void generator::add_all(interface& outputs, const interface& others)
 {
-    mapping outputs;
-    for (auto& sym : p.symbols) outputs[sym] = {&target[sym]};
-    return outputs; 
+    for (const auto& [source, symbols] : others)
+        outputs[source].insert(symbols.begin(), symbols.end());
 }
 
-mapping generator::merge(const std::set<mapping>& outputs)
+mapping generator::empty_mapping()
 {
-    mapping merged = {};
-
-    for (const auto& output : outputs)
-        for (const auto& [sym, o] : output)
-            merged[sym].insert(o.begin(), o.end());
-
-    return merged;
+    mapping outputs;
+    for (auto sym : p.symbols) outputs[sym];
+    return outputs;
 }
 
 std::set<symbol> generator::generate_grouping(const std::set<grouping>& g)

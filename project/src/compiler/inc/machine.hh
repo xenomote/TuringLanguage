@@ -14,7 +14,7 @@
 
 enum direction {left, right};
 enum result {accept, reject};
-enum marking {marked, unmarked};
+enum marking {marked = true, unmarked = false};
 
 struct symbol
 {
@@ -39,10 +39,12 @@ struct transition
     successor next;
 };
 
+using mapping = std::map<symbol, transition>;
+
 struct state 
 {
     std::string source;
-    std::map<symbol, transition> mapping;
+    mapping transitions;
 };
 
 class machine 

@@ -175,8 +175,8 @@ condition:
 grouping:
     reference   {$$ = $reference;}
     | symbol    {$$ = $symbol;}
-    | MARKED    {$$ = marked;}
-    | UNMARKED  {$$ = unmarked;}
+    | MARKED    {$$ = {marked};}
+    | UNMARKED  {$$ = {unmarked};}
     ;
 
 symbol: 
