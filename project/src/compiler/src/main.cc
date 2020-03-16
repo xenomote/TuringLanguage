@@ -66,7 +66,7 @@ int main(int argc, char** argv)
                 generator generate(output);
 
                 list<state> states = generate();
-                list<symbol> tape = {{false, '0'},{false, '0'},{false, '0'},{false, '0'}};
+                list<symbol> tape = {{false, '0'},{false, '_'},{false, '0'},{false, '0'}};
                 
                 machine m(states, tape);
                 int c = 0;

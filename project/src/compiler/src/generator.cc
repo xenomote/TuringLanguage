@@ -28,26 +28,32 @@ interface generator::generate(const statement_list& ss, interface& outputs)
     for (const auto& s : ss) {
         std::visit(visitor {
             [&](const result& res) {
+                set_outputs(outputs, {});
+                set_travel(outputs, right);
                 connect(outputs, res);            
                 outputs = {};
             },
 
-            [&](const reference& ref){
+            [&](const reference& ref)
+            {
                 if (blocks.find(ref) == blocks.end()) {
                     const auto& statements = p.blocks.at(ref);
 
-                    state dummy = {"", empty_mapping()};
-                    blocks[ref] = dummy.transitions;
-                    auto inputs = make_interface(dummy);
+                    blocks[ref] = {};
+                    state dummy = {"", {}};
+                    interface inputs = make_interface(dummy);
 
                     generate(statements, inputs);
+                    blocks[ref] = dummy.transitions;
                 }
 
                 add_all(backpatch[ref], outputs);
                 outputs = {};
             },
 
-            [&](const operation& o){
+            [&](const operation& o)
+            {
+                // if there are no modifiers
                 if (o.modifiers.empty()) {
                     auto& current = states.emplace_back();
                     std::stringstream name;
@@ -62,25 +68,42 @@ interface generator::generate(const statement_list& ss, interface& outputs)
                     outputs = make_interface(current);
                 }
 
-                // THIS DOES NOT WORK
+                // if there is a loop or repetition
                 else for (const auto& mod : o.modifiers) {
                     std::visit(visitor {
                         [&](loop l)
                         {
+                            auto& loop = states.emplace_back();
+                            std::stringstream name;
+                            name << "line " << s.source.begin.line << " loop";
+                            loop = {name.str(), {}};
+
                             auto g = generate_grouping({l.predicate.value});
+
+                            interface loop_exit;
+                            for (auto& [target, symbols] : outputs)
+                                for (auto& sym : symbols)
+                                    if (g.count(sym) ^ l.inverted)
+                                        target -> transitions[sym].next = &loop;
+                                    else
+                                        loop_exit[target].insert(sym);
 
                             set_outputs(outputs, o.output);
                             set_travel(outputs, o.travel);
 
-                            interface loop_outputs;
-                            for (auto& [target, symbols] : outputs)
+                            interface loop_outputs = make_interface(loop);
+                            
+                            for (auto& [target, symbols] : loop_outputs)
                                 for (auto& sym : symbols)
                                     if (g.count(sym) ^ l.inverted)
                                         target -> transitions[sym].next = target;
                                     else
-                                        loop_outputs[target].insert(sym);
+                                        loop_exit[target].insert(sym);
 
-                            outputs = loop_outputs;
+                            set_outputs(loop_outputs, o.output);
+                            set_travel(loop_outputs, o.travel);
+
+                            outputs = loop_exit;
                         },
 
                         [&](int i)
@@ -91,18 +114,21 @@ interface generator::generate(const statement_list& ss, interface& outputs)
                 }
             },
 
-            [&](const conditional& c){
+            [&](const conditional& c)
+            {
                 interface condition_outputs;
                 for (const auto& [cond, condition_statements] : c.conditions) {
                     std::set<symbol> condition_symbols = generate_grouping({cond.value});
 
                     interface entry_points;
-                    for (auto& [target, symbols] : outputs)
+                    for (auto& [target, symbols] : outputs) {
                         for (const auto& sym : symbols)
-                            if (condition_symbols.count(sym)) {
-                                symbols.erase(sym);
+                            if (condition_symbols.count(sym))
                                 entry_points[target].insert(sym);
-                            }
+
+                        for (const auto& sym : entry_points[target])
+                            symbols.erase(sym);
+                    }
                     
                     auto exit_points = generate(condition_statements, entry_points);
                     
