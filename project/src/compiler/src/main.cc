@@ -1,8 +1,9 @@
 #include <getopt.h>
+#include <ctype.h>
 
+#include <exception>
 #include <iostream>
 #include <fstream>
-
 #include <memory>
 
 #include "parser.hh"
@@ -19,21 +20,46 @@ bool debug = false;
 
 using namespace std;
 
+list<symbol> read_tape(FILE* f)
+{
+    list<symbol> t;
+
+    while (true) {
+        int c;
+        
+        if ((c = fgetc(f)) == EOF) break;
+        if (isspace(c)) continue;
+        char sym = c;
+
+        bool mark = false;
+        if ((c = fgetc(f)) != EOF && !isspace(c)) {
+            if (c == '*') mark = true;
+            else throw runtime_error("bad tape format");
+        }
+
+        t.emplace_back(symbol {mark, sym});
+    }
+
+    return t;
+}
+
 int main(int argc, char** argv)
 {
     int opt;
 
-    string filename;
-    FILE* m;
+    string machine_filename, tape_filename;
+    FILE* machine_file, * tape_file;
 
     while ((opt = getopt(argc, argv, ARG_STRING)) > -1) {
         switch (opt) {
             case 'm':
-                filename = optarg;
-                m = fopen(optarg, "r");
+                machine_filename = optarg;
+                machine_file = fopen(optarg, "r");
                 break;
 
             case 't':
+                tape_filename = optarg;
+                tape_file = fopen(optarg, "r");
                 break;
 
             case 'd':
@@ -47,48 +73,52 @@ int main(int argc, char** argv)
     }
 
     program output;
+    list<symbol> tape;
 
-    yy::parser parser(filename, output);
-    if (debug) {
-        parser.set_debug_stream(cout);
-        parser.set_debug_level(true);
+    yy::parser parser(machine_filename, output);
+    
+
+    if (machine_file != NULL) yyin = machine_file;
+    else {
+        cerr << "could not open machine file \"" << machine_filename << "\"" << endl;
+        return EXIT_FAILURE;
     }
 
-    if (m != NULL) {
-        yyin = m;
-        
-        if (parser() == 0) {
-            try {
-                ensure_exit(output);
-                ensure_distinct_conditions(output);
-                ensure_valid_references(output);
+    if (tape_file != NULL) tape = read_tape(tape_file);
+    else {
+        cerr << "could not open tape file \"" << tape_filename << "\"" << endl;
+        return EXIT_FAILURE;
+    }
 
-                generator generate(output);
+    if (parser() == 0) {
+        try {
+            ensure_exit(output);
+            ensure_distinct_conditions(output);
+            ensure_valid_references(output);
 
-                list<state> states = generate();
-                list<symbol> tape = {{false, '0'},{false, '_'},{false, '0'},{false, '0'}};
-                
-                machine m(states, tape);
-                int c = 0;
+            generator generate(output);
 
-                while (!m.halted()) {
-                    cout << "step " << c << ": " << m << endl;
-                    m.step();
-                    c++;
-                } 
+            list<state> states = generate();
+            
+            machine m(states, tape);
+            int steps = 0;
 
-                cout << "step " << c << ": " << m << endl;
-            }
+            while (!m.halted()) {
+                cout << "step " << steps << ": " << m << endl;
+                m.step();
+                steps++;
+            } 
 
-            catch (semantic_error& e) {
-                cerr << "compilation failed: " << e.what() << endl;
-            }
+            cout << "step " << steps << ": " << m << endl;
         }
 
-        else cerr << "failed to parse" << endl;
-        
-        fclose(m);
+        catch (semantic_error& e) {
+            cerr << "compilation failed: " << e.what() << endl;
+        }
     }
 
-    else cerr << "could not open " << filename << endl;
+    else cerr << "failed to parse" << endl;
+        
+    fclose(machine_file);
+    fclose(tape_file);
 }

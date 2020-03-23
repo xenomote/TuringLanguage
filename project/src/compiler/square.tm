@@ -1,19 +1,15 @@
 check = 0, _
+//second = X
 
 mark, go right
-go right until _
-write X, go left
-if marked
-    reject
-else
-    go left until marked
-    unmark, go right
+do first
+
+first:
     go right until _
-    accept
+    go left until marked
+    do first
 
 /*
-second = X, _
-
 if 0
     mark, go right
     do first
@@ -21,7 +17,7 @@ reject
 
 
 // just marked/crossed first 0
-first: 
+first:
     go right until check 
 
     // the only 0 seen was the first
@@ -29,7 +25,7 @@ first:
         accept
     
     // continue to cross off 0s
-    write x, go right
+    write X, go right
     do cross
 
 // start on even
@@ -37,7 +33,7 @@ cross:
     // check for even number of 0s
     go right until check
     if _
-    	go left until marked
+        go left until marked
         do first
     go right
 

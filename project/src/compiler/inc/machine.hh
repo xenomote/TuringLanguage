@@ -11,7 +11,6 @@
 #define MAX_INSTANCES 1024
 #define MAX_STEPS 1000000
 
-
 enum direction {left, right};
 enum result {accept, reject};
 enum marking {marked = true, unmarked = false};
@@ -45,6 +44,7 @@ struct state
 {
     std::string source;
     mapping transitions;
+    
 };
 
 class machine 

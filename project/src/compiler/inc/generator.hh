@@ -24,21 +24,21 @@ private:
 
     void add_all(interface& outputs, const interface& others);
 
-    void connect(interface& outputs, const successor& target);
-    void connect(interface& outputs, const mapping& target);
-
-
     void set_outputs(const interface& outputs, const std::optional<tape_write>& write);
     void set_travel(const interface& ouptuts, direction travel);
+    void set_next(interface& outputs, const successor& target);
+
+    void patch(interface& outputs, mapping& target);
 
     std::set<symbol> generate_grouping(const std::set<grouping>& groups);
 
     const program& p;
     
-    std::list<state> states;
     std::map<reference, std::set<symbol>> groups;
     std::map<reference, mapping> blocks;
     std::map<reference, interface> backpatch;
+    std::list<state> states;
+    std::list<state> dummies;
 };
 
 

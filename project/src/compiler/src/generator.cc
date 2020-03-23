@@ -10,15 +10,14 @@ std::list<state> generator::operator()()
     }
 
     auto& start = states.emplace_back();
-    std::stringstream name;
-    name << "start";
-    start = {name.str(), {}};
+    start = {"start", {}};
 
     interface map = make_interface(start);
     generate(p.statements, map);
 
-    for(auto& [ref, outputs] : backpatch)
-        connect(outputs, blocks[ref]);
+    for(auto& [ref, outputs] : backpatch) {
+        patch(outputs, blocks[ref]);
+    }
     
     return states;
 }
@@ -30,7 +29,7 @@ interface generator::generate(const statement_list& ss, interface& outputs)
             [&](const result& res) {
                 set_outputs(outputs, {});
                 set_travel(outputs, right);
-                connect(outputs, res);            
+                set_next(outputs, res);            
                 outputs = {};
             },
 
@@ -40,7 +39,11 @@ interface generator::generate(const statement_list& ss, interface& outputs)
                     const auto& statements = p.blocks.at(ref);
 
                     blocks[ref] = {};
-                    state dummy = {"", {}};
+                    auto& dummy = dummies.emplace_back();
+                    std::stringstream name;
+                    name << "entry to " << ref;
+                    dummy = {name.str(), {}};
+
                     interface inputs = make_interface(dummy);
 
                     generate(statements, inputs);
@@ -62,8 +65,7 @@ interface generator::generate(const statement_list& ss, interface& outputs)
 
                     set_outputs(outputs, o.output);
                     set_travel(outputs, o.travel);
-
-                    connect(outputs, &current);
+                    set_next(outputs, &current);
 
                     outputs = make_interface(current);
                 }
@@ -151,18 +153,19 @@ interface generator::generate(const statement_list& ss, interface& outputs)
     return outputs;
 }
 
-void generator::connect(interface& outputs, const successor& target)
+void generator::set_next(interface& outputs, const successor& target)
 {
     for (auto& [source, symbols] : outputs)
         for (auto& sym : symbols)
             source -> transitions[sym].next = target;
-}
+}   
 
-void generator::connect(interface& outputs, const mapping& inputs)
+void generator::patch(interface& outputs, mapping& block)
 {
     for (auto& [source, symbols] : outputs)
-        for (auto& sym : symbols)
-            source -> transitions[sym] = inputs.at(sym);
+        for (auto& sym : symbols) {
+            source -> transitions[sym] = block.at(sym);
+        }
 }
 
 void generator::set_outputs(const interface& outputs, const std::optional<tape_write>& write)
