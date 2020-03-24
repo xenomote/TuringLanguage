@@ -9,213 +9,131 @@ std::list<state> generator::operator()()
         groups[r] = generate_grouping(cond.value);
     }
 
-    auto& start = states.emplace_back();
-    start = {"start", {}};
+    auto& start = states.emplace_back(state {"start", {}});
+    auto inputs = make_interface(&start);
 
-    interface map = make_interface(start);
-    generate(p.statements, map);
+    generate(p.statements, inputs);
 
-    for(auto& [ref, outputs] : backpatch) {
-        patch(outputs, blocks[ref]);
+    for (auto& [ref, inputs] : references) {
+        inputs.patch(blocks.at(ref));
     }
-    
+
     return states;
 }
 
-interface generator::generate(const statement_list& ss, interface& outputs)
+interface generator::generate(const statement_list& ss, interface& inputs)
 {
-    for (const auto& s : ss) {
-        std::visit(visitor {
-            [&](const result& res) {
-                set_outputs(outputs, {});
-                set_travel(outputs, right);
-                set_next(outputs, res);            
-                outputs = {};
-            },
+    interface output = inputs;
+    for (auto& s : ss) output = generate(s, output);
+    return output;
+}
 
-            [&](const reference& ref)
-            {
-                if (blocks.find(ref) == blocks.end()) {
-                    const auto& statements = p.blocks.at(ref);
+interface generator::generate(const statement& s, interface& inputs)
+{
+    return std::visit(visitor {
+        [&](result x)       {return generate(x, inputs);},
+        [&](reference x)    {return generate(x, inputs);},
+        [&](operation x)    {return generate(x, inputs);},
+        [&](conditional x)  {return generate(x, inputs);},
+    }, s.value);
+}
 
-                    blocks[ref] = {};
-                    auto& dummy = dummies.emplace_back();
-                    std::stringstream name;
-                    name << "entry to " << ref;
-                    dummy = {name.str(), {}};
+interface generator::generate(const result& res, interface& inputs)
+{
+    inputs.set({}, right, res);
 
-                    interface inputs = make_interface(dummy);
+    return {};
+}
 
-                    generate(statements, inputs);
-                    blocks[ref] = dummy.transitions;
-                }
+interface generator::generate(const reference& ref, interface& inputs)
+{
+    if (blocks.find(ref) == blocks.end()) {
+        blocks[ref] = {ref, {}};
+        auto outputs = make_interface(&blocks[ref]);
+        generate(p.blocks.at(ref), outputs);
+    }
 
-                add_all(backpatch[ref], outputs);
-                outputs = {};
-            },
+    references[ref].absorb(inputs);
 
-            [&](const operation& o)
-            {
-                // if there are no modifiers
-                if (o.modifiers.empty()) {
-                    auto& current = states.emplace_back();
-                    std::stringstream name;
-                    name << "line " << s.source.begin.line;
-                    current = {name.str(), {}};
+    return {};
+}
 
-                    set_outputs(outputs, o.output);
-                    set_travel(outputs, o.travel);
-                    set_next(outputs, &current);
+interface generator::generate(const operation& op, interface& inputs)
+{
+    interface outputs;
 
-                    outputs = make_interface(current);
-                }
+    if (!op.modifiers.empty()) {
+        auto loop_inputs = inputs;
 
-                // if there is a loop or repetition
-                else for (const auto& mod : o.modifiers) {
-                    std::visit(visitor {
-                        [&](loop l)
-                        {
-                            auto& loop = states.emplace_back();
-                            std::stringstream name;
-                            name << "line " << s.source.begin.line << " loop";
-                            loop = {name.str(), {}};
+        for (auto& mod : op.modifiers) {
+            outputs = {};
 
-                            auto g = generate_grouping({l.predicate.value});
+            std::visit(visitor {
+                [&](int i){},
+                [&](loop l)
+                {
+                    auto group = generate_grouping(l.predicate.value);
+                    std::set<symbol> remaining(p.symbols);
+                    for (auto& sym : group) remaining.erase(sym);
 
-                            interface loop_exit;
-                            for (auto& [target, symbols] : outputs)
-                                for (auto& sym : symbols)
-                                    if (g.count(sym) ^ l.inverted)
-                                        target -> transitions[sym].next = &loop;
-                                    else
-                                        loop_exit[target].insert(sym);
+                    if (l.inverted) std::swap(group, remaining);
 
-                            set_outputs(outputs, o.output);
-                            set_travel(outputs, o.travel);
+                    auto name = "line " + std::to_string(op.line) + " loop";
+                    auto& loop_state = states.emplace_back(state {name, {}});
+                    auto loop_outputs = make_interface(&loop_state);
 
-                            interface loop_outputs = make_interface(loop);
-                            
-                            for (auto& [target, symbols] : loop_outputs)
-                                for (auto& sym : symbols)
-                                    if (g.count(sym) ^ l.inverted)
-                                        target -> transitions[sym].next = target;
-                                    else
-                                        loop_exit[target].insert(sym);
+                    loop_inputs.absorb(loop_outputs.select(group));
+                    outputs.absorb(loop_outputs.select(remaining));
+                    outputs.absorb(loop_inputs.select(remaining));
 
-                            set_outputs(loop_outputs, o.output);
-                            set_travel(loop_outputs, o.travel);
+                    loop_inputs.set(op.output, op.travel, &loop_state);
+                },
+            }, mod);
 
-                            outputs = loop_exit;
-                        },
+            loop_inputs = outputs;
+        }
+    }
 
-                        [&](int i)
-                        {
-
-                        },
-                    }, mod);
-                }
-            },
-
-            [&](const conditional& c)
-            {
-                interface condition_outputs;
-                for (const auto& [cond, condition_statements] : c.conditions) {
-                    std::set<symbol> condition_symbols = generate_grouping({cond.value});
-
-                    interface entry_points;
-                    for (auto& [target, symbols] : outputs) {
-                        for (const auto& sym : symbols)
-                            if (condition_symbols.count(sym))
-                                entry_points[target].insert(sym);
-
-                        for (const auto& sym : entry_points[target])
-                            symbols.erase(sym);
-                    }
-                    
-                    auto exit_points = generate(condition_statements, entry_points);
-                    
-                    add_all(condition_outputs, exit_points);
-                }
-
-                if (c.else_condition.has_value()) {
-                    auto condition_statements = c.else_condition.value();
-                    auto exit_points = generate(condition_statements, outputs);
-                    outputs = exit_points;
-                }
-
-                add_all(condition_outputs, outputs);
-
-                outputs = condition_outputs;
-            },
-        }, s.value);
+    else {
+        auto name = "line " + std::to_string(op.line);
+        auto& op_state = states.emplace_back(state {name, {}});
+        inputs.set(op.output, op.travel, &op_state);
+        outputs = make_interface(&op_state);
     }
 
     return outputs;
 }
 
-void generator::set_next(interface& outputs, const successor& target)
-{
-    for (auto& [source, symbols] : outputs)
-        for (auto& sym : symbols)
-            source -> transitions[sym].next = target;
-}   
-
-void generator::patch(interface& outputs, mapping& block)
-{
-    for (auto& [source, symbols] : outputs)
-        for (auto& sym : symbols) {
-            source -> transitions[sym] = block.at(sym);
-        }
-}
-
-void generator::set_outputs(const interface& outputs, const std::optional<tape_write>& write)
-{
-    if (write.has_value()) std::visit(visitor {
-        [&](symbol out) 
-        {
-            for (auto& [source, symbols] : outputs) 
-                for (auto& sym : symbols)
-                    source -> transitions[sym].output = out;
-        },
-
-        [&](bool mark) 
-        {
-            for (auto& [source, symbols] : outputs) 
-                for (auto& sym : symbols)
-                    source -> transitions[sym].output = {mark, sym.character};
-        },
-    }, write.value());
-
-    else for (auto& [source, symbols] : outputs) 
-        for (auto& sym : symbols)
-            source -> transitions[sym].output = sym;
-}
-
-void generator::set_travel(const interface& outputs, direction travel)
-{
-    for (auto& [source, symbols] : outputs) 
-        for (auto& sym : symbols)
-            source -> transitions[sym].travel = travel;
-}
-
-
-interface generator::make_interface(state& target)
+interface generator::generate(const conditional& branch, interface& inputs)
 {
     interface outputs;
-    outputs[&target] = p.symbols;
+    std::set<symbol> remaining(p.symbols);
+
+    for (auto& [c, ss] : branch.conditions) {
+        auto group = generate_grouping(c.value);
+        auto subset = inputs.select(group);
+
+        outputs.absorb(generate(ss, subset));
+
+        for (auto& sym : group) remaining.erase(sym);
+    }
+
+    if (branch.else_condition.has_value()) {
+        auto& ss = branch.else_condition.value();
+        auto subset = inputs.select(remaining);
+
+        outputs.absorb(generate(ss, subset));
+    }
+
+    else outputs.absorb(inputs.select(remaining));
+
     return outputs;
 }
 
-void generator::add_all(interface& outputs, const interface& others)
+interface generator::make_interface(state* source)
 {
-    for (const auto& [source, symbols] : others)
-        outputs[source].insert(symbols.begin(), symbols.end());
-}
-
-mapping generator::empty_mapping()
-{
-    mapping outputs;
-    for (auto sym : p.symbols) outputs[sym];
+    interface outputs;
+    for (auto sym : p.symbols) outputs[sym].insert(source);
     return outputs;
 }
 
@@ -225,25 +143,74 @@ std::set<symbol> generator::generate_grouping(const std::set<grouping>& g)
     
     for (auto& group : g) {
         std::visit(visitor {
-            [&](const symbol& sym)
-            {
-                s.insert(sym);
-            },
-
             [&](const reference& ref)
             {
                 auto& t = groups.at(ref);
-                s.insert(t.begin(), t.end());
+                for (auto& sym : t) s.insert(sym);
             },
 
             [&](marking m)
             {
-                for (const auto& sym : p.symbols)
-                    if (sym.marked == m)
-                        s.insert(sym);
+                for (const auto& sym : p.symbols) if (sym.marked == m) s.insert(sym);
+            },
+
+            [&](const symbol& sym)
+            {
+                s.insert(sym);
             },
         }, group);
     }
 
     return s;
+}
+
+void interface::absorb(const interface& inputs) {
+    std::map<state*, std::set<symbol>> duplicates;
+
+    for (auto& [sym, sources] : inputs) {
+        for (auto& source : sources) {
+            auto [x, inserted] = (*this)[sym].insert(source);
+
+            if (!inserted) duplicates[source].insert(sym);
+        }
+    }
+
+    if (!duplicates.empty()) throw duplicate_error(duplicates);
+}
+
+void interface::set(std::optional<tape_write> write, direction travel, successor next)
+{
+    for (auto& [sym, sources] : *this) {
+        for (auto& source : sources) {
+            auto& trans = source->transitions[sym];
+
+            if (write.has_value()) {
+                std::visit(visitor {
+                    [&](symbol out){trans.output = out;},
+                    [&](bool m){trans.output = symbol {m, sym.character};},
+                }, write.value());
+            }
+
+            else trans.output = sym;
+
+            trans.travel = travel;
+            trans.next = next;
+        }
+    }
+}
+
+void interface::patch(state& target)
+{
+    for (auto& [sym, sources] : *this) {
+        for (auto& source : sources) {
+            source->transitions[sym] = target.transitions[sym];
+        }
+    }
+}
+
+interface interface::select(std::set<symbol> symbols)
+{
+    interface outputs;
+    for (auto& sym : symbols) outputs[sym] = (*this)[sym];
+    return outputs;
 }

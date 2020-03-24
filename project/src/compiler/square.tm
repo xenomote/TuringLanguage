@@ -1,15 +1,6 @@
 check = 0, _
-//second = X
+second = X
 
-mark, go right
-do first
-
-first:
-    go right until _
-    go left until marked
-    do first
-
-/*
 if 0
     mark, go right
     do first
@@ -43,4 +34,3 @@ cross:
         reject
     write X, go right
     do cross
-*/

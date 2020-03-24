@@ -185,7 +185,7 @@ symbol:
     ;
 
 operation:
-    write travel modifiers  {$$ = {$travel, $write, $modifiers};}
+    write travel modifiers  {$$ = {$travel, $write, $modifiers, @1.begin.line};}
     ;
 
 write: 

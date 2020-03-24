@@ -3,11 +3,31 @@
 
 #include <list>
 #include <variant>
+#include <stdexcept>
 
 #include "machine.hh"
 #include "syntax.hh"
 
-using interface = std::map<state*, std::set<symbol>>;
+class duplicate_error : public std::runtime_error
+{
+public:
+    duplicate_error(std::map<state*, std::set<symbol>> duplicates)
+    : runtime_error("duplicate mappings detected")
+    , duplicates(duplicates)
+    {}
+
+    std::map<state*, std::set<symbol>> duplicates;
+};
+
+// map of input symbols from set of source states
+class interface : public std::map<symbol, std::set<state*>>
+{
+public:
+    void absorb(const interface& inputs);
+    void set(std::optional<tape_write> write, direction travel, successor next);
+    void patch(state& target);
+    interface select(std::set<symbol> symbols);
+};
 
 class generator {
 public:
@@ -16,29 +36,23 @@ public:
 
 private:
     interface generate(const statement_list& ss, interface& inputs);
+    interface generate(const statement& s, interface& inputs);
 
-    interface make_interface(state& target);
-    interface make_interface(mapping& target);
+    interface generate(const result& s, interface& inputs);
+    interface generate(const reference& s, interface& inputs);
+    interface generate(const operation& s, interface& inputs);
+    interface generate(const conditional& s, interface& inputs);
 
-    mapping empty_mapping();
-
-    void add_all(interface& outputs, const interface& others);
-
-    void set_outputs(const interface& outputs, const std::optional<tape_write>& write);
-    void set_travel(const interface& ouptuts, direction travel);
-    void set_next(interface& outputs, const successor& target);
-
-    void patch(interface& outputs, mapping& target);
+    interface make_interface(state* source);
 
     std::set<symbol> generate_grouping(const std::set<grouping>& groups);
 
     const program& p;
     
-    std::map<reference, std::set<symbol>> groups;
-    std::map<reference, mapping> blocks;
-    std::map<reference, interface> backpatch;
     std::list<state> states;
-    std::list<state> dummies;
+    std::map<reference, state> blocks;
+    std::map<reference, interface> references;
+    std::map<reference, std::set<symbol>> groups;
 };
 
 

@@ -54,17 +54,15 @@ void machine::step()
     std::visit(visitor {
         [&](state* next)
         {
-            if (head == prev(tape.end())) {
-                tape.push_back(blank);
-            }
-
             *head = out;
 
-            if (travel == left) {
-                if (head != tape.begin()) --head;
-            } 
+            if (travel == left && head != tape.begin()) --head;
             
-            else ++head;
+            else {
+                if (head == prev(tape.end())) tape.push_back(blank);
+
+                ++head;
+            }
 
             s = next;
         },
