@@ -58,7 +58,7 @@ struct operation
 {
     direction travel;
     std::optional<tape_write> output;
-    std::vector<modifier> modifiers;
+    std::list<modifier> modifiers;
     unsigned int line;
 };
 

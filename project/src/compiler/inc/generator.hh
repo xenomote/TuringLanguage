@@ -43,6 +43,8 @@ private:
     interface generate(const operation& s, interface& inputs);
     interface generate(const conditional& s, interface& inputs);
 
+    interface generate(const operation& s, interface& inputs, std::list<modifier>::const_reverse_iterator mod);
+
     interface make_interface(state* source);
 
     std::set<symbol> generate_grouping(const std::set<grouping>& groups);

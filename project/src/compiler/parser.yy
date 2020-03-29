@@ -82,13 +82,13 @@
 %type <condition> condition
 %type <grouping> grouping
 
-%type <loop> loop
-%type <int> repetition
-
 %type <direction> travel direction
 %type <std::optional<tape_write>> write
-%type <std::vector<modifier>> modifiers
+%type <std::list<modifier>> modifiers
 %type <modifier> modifier
+
+%type <loop> loop
+%type <int> repetition
 
 %type <symbol> symbol
 %type <std::string> reference
@@ -190,9 +190,9 @@ operation:
 
 write: 
     %empty                  {$$ = {};}
-    | MARK COMMA            {$$ = true;}
-    | UNMARK COMMA          {$$ = false;}
-    | WRITE symbol COMMA    {$$ = $symbol;}
+    | MARK COMMA          {$$ = true;}
+    | UNMARK COMMA        {$$ = false;}
+    | WRITE symbol COMMA   {$$ = $symbol;}
     ;
 
 travel: 
@@ -205,8 +205,8 @@ modifiers:
     ;
 
 modifier:
-    loop      {$$ = $1;}
-    | repetition    {$$ = $1;}
+    loop {$$ = $loop;}
+    | NUMBER {$$ = $NUMBER;}
     ;
 
 loop:
@@ -215,7 +215,7 @@ loop:
     ;
 
 repetition: 
-    NUMBER TIMES    {$$ = $NUMBER;}
+    TIMES NUMBER {$$ = 1;}
     ;
 
 direction: 

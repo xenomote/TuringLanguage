@@ -1,4 +1,6 @@
 #include <sstream>
+#include <stack>
+#include <iterator>
 
 #include "generator.hh"
 #include "syntax.hh"
@@ -60,45 +62,50 @@ interface generator::generate(const reference& ref, interface& inputs)
 
 interface generator::generate(const operation& op, interface& inputs)
 {
+    auto start = op.modifiers.rbegin();
+    auto finish = op.modifiers.rend();
+    auto pre = std::next(start);
+    return generate(op, inputs, start);
+}
+
+interface generator::generate(const operation& op, interface& inputs, std::list<modifier>::const_reverse_iterator mod)
+{
     interface outputs;
 
-    if (!op.modifiers.empty()) {
-        auto loop_inputs = inputs;
-
-        for (auto& mod : op.modifiers) {
-            outputs = {};
-
-            std::visit(visitor {
-                [&](int i){},
-                [&](loop l)
-                {
-                    auto group = generate_grouping(l.predicate.value);
-                    std::set<symbol> remaining(p.symbols);
-                    for (auto& sym : group) remaining.erase(sym);
-
-                    if (l.inverted) std::swap(group, remaining);
-
-                    auto name = "line " + std::to_string(op.line) + " loop";
-                    auto& loop_state = states.emplace_back(state {name, {}});
-                    auto loop_outputs = make_interface(&loop_state);
-
-                    loop_inputs.absorb(loop_outputs.select(group));
-                    outputs.absorb(loop_outputs.select(remaining));
-                    outputs.absorb(loop_inputs.select(remaining));
-
-                    loop_inputs.set(op.output, op.travel, &loop_state);
-                },
-            }, mod);
-
-            loop_inputs = outputs;
-        }
-    }
-
-    else {
+    if (mod == op.modifiers.rend()) {
         auto name = "line " + std::to_string(op.line);
         auto& op_state = states.emplace_back(state {name, {}});
         inputs.set(op.output, op.travel, &op_state);
         outputs = make_interface(&op_state);
+    }
+
+    else {
+        auto sub_mod = std::next(mod);
+
+        std::visit(visitor {
+            [&](const int& repetitions)
+            {
+                outputs = inputs;
+
+                for (int i = 0; i < repetitions; i++) {
+                    outputs = generate(op, outputs, sub_mod);
+                }
+            },
+            [&](const loop& l)
+            {
+                auto group = generate_grouping(l.predicate.value);
+                std::set<symbol> remaining(p.symbols);
+                for (auto& sym : group) remaining.erase(sym);
+
+                if (l.inverted) std::swap(group, remaining);
+
+                auto loop_outputs = generate(op, inputs, sub_mod);
+
+                inputs.absorb(loop_outputs.select(group));
+                outputs.absorb(loop_outputs.select(remaining));
+                outputs.absorb(inputs.select(remaining));
+            },
+        }, *mod);
     }
 
     return outputs;
@@ -169,9 +176,18 @@ void interface::absorb(const interface& inputs) {
 
     for (auto& [sym, sources] : inputs) {
         for (auto& source : sources) {
-            auto [x, inserted] = (*this)[sym].insert(source);
+
+            auto& connections = (*this)[sym];
+
+            // connect newcomer to existing interface
+            if (!connections.empty())
+                source->transitions[sym] = (*connections.begin())->transitions[sym];
+
+            auto [x, inserted] = connections.insert(source);
 
             if (!inserted) duplicates[source].insert(sym);
+
+
         }
     }
 

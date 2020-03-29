@@ -11,7 +11,6 @@
 #include "machine.hh"
 #include "generator.hh"
 
-//extern std::istream yyin;
 extern FILE* yyin;
 
 static const char* ARG_STRING = "m:t:d";
@@ -39,6 +38,8 @@ list<symbol> read_tape(FILE* f)
 
         t.emplace_back(symbol {mark, sym});
     }
+
+    t.emplace_back(blank);
 
     return t;
 }

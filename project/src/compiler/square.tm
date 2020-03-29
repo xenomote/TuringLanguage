@@ -1,6 +1,10 @@
 check = 0, _
 second = X
 
+write X, go right +3
+accept
+
+/*
 if 0
     mark, go right
     do first
@@ -34,3 +38,5 @@ cross:
         reject
     write X, go right
     do cross
+
+*/

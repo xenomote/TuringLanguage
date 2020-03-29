@@ -68,9 +68,8 @@
 "times"                     return token::TIMES;
 "backwards"                 return token::BACKWARDS;
 
-"."[1-9][[:digit:]]* {
+"+"[1-9][[:digit:]]* {
     std::string number = yytext;
-
     yylval -> emplace<int>(std::stoi(number.substr(1)));
     return token::NUMBER;
 }
