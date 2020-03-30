@@ -184,7 +184,8 @@ void interface::absorb(const interface& inputs) {
             auto& connections = this->inputs[sym];
 
             // connect newcomer to existing interface
-            source->transitions[sym] = transitions[sym];
+            if (transitions.count(sym))
+                source->transitions[sym] = transitions[sym];
 
             auto [x, inserted] = connections.insert(source);
 
