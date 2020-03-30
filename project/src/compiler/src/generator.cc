@@ -1,6 +1,7 @@
 #include <sstream>
 #include <stack>
 #include <iterator>
+#include <stdexcept>
 
 #include "generator.hh"
 #include "syntax.hh"
@@ -18,6 +19,14 @@ std::list<state> generator::operator()()
 
     for (auto& [ref, inputs] : references) {
         inputs.patch(blocks.at(ref));
+    }
+
+    // check all possible transitions have been mapped
+    for (auto& state : states) {
+        for (auto& sym : p.symbols) {
+            if (!state.transitions.count(sym))
+                throw std::runtime_error("unfulfilled transition in " + state.source);
+        }
     }
 
     return states;
@@ -62,19 +71,15 @@ interface generator::generate(const reference& ref, interface& inputs)
 
 interface generator::generate(const operation& op, interface& inputs)
 {
-    auto start = op.modifiers.rbegin();
-    auto finish = op.modifiers.rend();
-    auto pre = std::next(start);
-    return generate(op, inputs, start);
+    return generate(op, inputs, op.modifiers.rbegin());
 }
 
-interface generator::generate(const operation& op, interface& inputs, std::list<modifier>::const_reverse_iterator mod)
+interface generator::generate(const operation& op, interface& inputs, std::list<modifier>::const_reverse_iterator mod, std::string suffix)
 {
     interface outputs;
 
     if (mod == op.modifiers.rend()) {
-        auto name = "line " + std::to_string(op.line);
-        auto& op_state = states.emplace_back(state {name, {}});
+        auto& op_state = states.emplace_back(state {"line " + std::to_string(op.line) + suffix, {}});
         inputs.set(op.output, op.travel, &op_state);
         outputs = make_interface(&op_state);
     }
@@ -88,7 +93,7 @@ interface generator::generate(const operation& op, interface& inputs, std::list<
                 outputs = inputs;
 
                 for (int i = 0; i < repetitions; i++) {
-                    outputs = generate(op, outputs, sub_mod);
+                    outputs = generate(op, outputs, sub_mod, " repetition " + std::to_string(i) + suffix);
                 }
             },
             [&](const loop& l)
@@ -99,9 +104,10 @@ interface generator::generate(const operation& op, interface& inputs, std::list<
 
                 if (l.inverted) std::swap(group, remaining);
 
-                auto loop_outputs = generate(op, inputs, sub_mod);
+                auto loop_inputs = inputs.select(group);
+                auto loop_outputs = generate(op, loop_inputs, sub_mod, std::string("") + (l.inverted ? " until" : " while") + " loop" + suffix);
 
-                inputs.absorb(loop_outputs.select(group));
+                loop_inputs.absorb(loop_outputs.select(group));
                 outputs.absorb(loop_outputs.select(remaining));
                 outputs.absorb(inputs.select(remaining));
             },
@@ -139,9 +145,9 @@ interface generator::generate(const conditional& branch, interface& inputs)
 
 interface generator::make_interface(state* source)
 {
-    interface outputs;
-    for (auto sym : p.symbols) outputs[sym].insert(source);
-    return outputs;
+    interface i;
+    for (auto sym : p.symbols) i.inputs[sym].insert(source);
+    return i;
 }
 
 std::set<symbol> generator::generate_grouping(const std::set<grouping>& g)
@@ -155,12 +161,10 @@ std::set<symbol> generator::generate_grouping(const std::set<grouping>& g)
                 auto& t = groups.at(ref);
                 for (auto& sym : t) s.insert(sym);
             },
-
             [&](marking m)
             {
                 for (const auto& sym : p.symbols) if (sym.marked == m) s.insert(sym);
             },
-
             [&](const symbol& sym)
             {
                 s.insert(sym);
@@ -174,20 +178,17 @@ std::set<symbol> generator::generate_grouping(const std::set<grouping>& g)
 void interface::absorb(const interface& inputs) {
     std::map<state*, std::set<symbol>> duplicates;
 
-    for (auto& [sym, sources] : inputs) {
+    for (auto& [sym, sources] : inputs.inputs) {
         for (auto& source : sources) {
 
-            auto& connections = (*this)[sym];
+            auto& connections = this->inputs[sym];
 
             // connect newcomer to existing interface
-            if (!connections.empty())
-                source->transitions[sym] = (*connections.begin())->transitions[sym];
+            source->transitions[sym] = transitions[sym];
 
             auto [x, inserted] = connections.insert(source);
 
             if (!inserted) duplicates[source].insert(sym);
-
-
         }
     }
 
@@ -196,28 +197,30 @@ void interface::absorb(const interface& inputs) {
 
 void interface::set(std::optional<tape_write> write, direction travel, successor next)
 {
-    for (auto& [sym, sources] : *this) {
+    for (auto& [sym, sources] : inputs) {
+        auto& trans = transitions[sym];
+
+        if (write.has_value()) {
+            std::visit(visitor {
+                [&](symbol out){trans.output = out;},
+                [&](bool m){trans.output = symbol {m, sym.character};},
+            }, write.value());
+        }
+
+        else trans.output = sym;
+
+        trans.travel = travel;
+        trans.next = next;
+
         for (auto& source : sources) {
-            auto& trans = source->transitions[sym];
-
-            if (write.has_value()) {
-                std::visit(visitor {
-                    [&](symbol out){trans.output = out;},
-                    [&](bool m){trans.output = symbol {m, sym.character};},
-                }, write.value());
-            }
-
-            else trans.output = sym;
-
-            trans.travel = travel;
-            trans.next = next;
+            source->transitions[sym] = trans;
         }
     }
 }
 
 void interface::patch(state& target)
 {
-    for (auto& [sym, sources] : *this) {
+    for (auto& [sym, sources] : inputs) {
         for (auto& source : sources) {
             source->transitions[sym] = target.transitions[sym];
         }
@@ -227,6 +230,6 @@ void interface::patch(state& target)
 interface interface::select(std::set<symbol> symbols)
 {
     interface outputs;
-    for (auto& sym : symbols) outputs[sym] = (*this)[sym];
+    for (auto& sym : symbols) outputs.inputs[sym] = inputs[sym];
     return outputs;
 }

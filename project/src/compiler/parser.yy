@@ -96,6 +96,7 @@
 
 %initial-action {
     @$.begin.filename = @$.end.filename = &filename;
+    register_symbol('_');
 }
 
 %start program

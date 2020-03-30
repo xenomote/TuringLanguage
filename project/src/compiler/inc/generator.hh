@@ -20,13 +20,18 @@ public:
 };
 
 // map of input symbols from set of source states
-class interface : public std::map<symbol, std::set<state*>>
+class interface
 {
 public:
+    interface() {};
+
     void absorb(const interface& inputs);
     void set(std::optional<tape_write> write, direction travel, successor next);
     void patch(state& target);
     interface select(std::set<symbol> symbols);
+
+    std::map<symbol, std::set<state*>> inputs;
+    std::map<symbol, transition> transitions;
 };
 
 class generator {
@@ -43,7 +48,7 @@ private:
     interface generate(const operation& s, interface& inputs);
     interface generate(const conditional& s, interface& inputs);
 
-    interface generate(const operation& s, interface& inputs, std::list<modifier>::const_reverse_iterator mod);
+    interface generate(const operation& s, interface& inputs, std::list<modifier>::const_reverse_iterator mod, std::string suffix = "");
 
     interface make_interface(state* source);
 

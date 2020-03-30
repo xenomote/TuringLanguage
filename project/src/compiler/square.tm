@@ -1,7 +1,6 @@
-check = 0, _
-second = X
-
-write X, go right +3
+mark, go right
+go right while 0
+go left until marked
 accept
 
 /*
@@ -38,5 +37,4 @@ cross:
         reject
     write X, go right
     do cross
-
 */
