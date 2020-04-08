@@ -25,7 +25,7 @@ std::list<state> generator::operator()()
     for (auto& state : states) {
         for (auto& sym : p.symbols) {
             if (!state.transitions.count(sym))
-                throw std::runtime_error("unfulfilled transition in " + state.source);
+                throw std::runtime_error("unfulfilled transition to " + std::to_string(sym.character) + " in " + state.source);
         }
     }
 
