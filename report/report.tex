@@ -1,0 +1,576 @@
+\documentclass[11pt]{article}
+
+\usepackage{hyperref}
+
+\title{%
+    University of St Andrews \\
+    \large CS4099 Senior Honours Project \\
+    Turing Machine Programming Language
+}
+
+\author{160001209}
+\date{\today}
+
+\setlength\parindent{0em}
+\setlength\parskip{1em}
+
+\begin{document}
+
+\begin{titlepage}
+	\centering
+	{\scshape\LARGE University of st Andrews \par}
+	\vspace{1cm}
+	{\scshape\Large CS4099 Senior Honours Project\par}
+	\vspace{1.5cm}
+	{\huge\bfseries Higher Level Turing Machine Programming\par}
+	\vspace{2cm}
+	{\Large\itshape Alexander Williamson\\160001209\par}
+	\vfill
+	supervised by\par
+	Prof.~Stephen \textsc{Linton}
+
+	\vfill
+
+% Bottom of the page
+	{\large \today\par}
+\end{titlepage}
+
+\section{Abstract}
+
+In CS3052 last year one of the practicals involved Turing Machine programming. Some students achieved some remarkable results, but experience makes it clear that this is a rather tedious process. For example it is common to need to produce two different copies of a certain set of states, so that they can do the same things for a while, and then do something different. Similarly it is common to have “marked” versions of some of all tape symbols, which behave the same as the unmarked versions almost all the time. Writing out all the states and transitions for these devices by hand rapidly becomes tedious.
+
+This project solves these problems by designing an appropriately high level language for describing these machines, and implementing a “compiler” for this language. This language allows these kinds of devices to be expressed simply in algorithmic way, while the straightforward transformation from this language to the device it describes retains a clear connection between what the student writes and the basic Turing Machine abstraction. As an extension this project also implements a simulator for machines described in this language which provides debugging tools to aid students further, and discusses how this project could be integrated with an IDE.
+
+\section{Declaration}
+
+I declare that the material submitted for assessment is my own work except where credit is explicitly given to others by citation or acknowledgement. This work was performed during the current academic year except where otherwise stated.
+
+The main text of this project report is XXXXXX words long including project specification and plan.
+
+In submitting this project report to the University of St Andrews, I give permission for it to be made available for use in accordance with the regulations of the University Library. I also give permission for the title and abstract to be published and for copies of the report to be made and supplied at cost to any bona fide library or research worker, and to be made available on the World Wide Web. I retain the copyright in this work.
+
+\tableofcontents
+\newpage
+
+\section{Introduction}
+
+When teaching the fundamentals of computer science, it is beneficial for students to gain practical experience implementing algorithms with Turing machines. The most straightforward way to do this is to produce a formal description of its alphabet, states and transition function, as these can easily be interpreted with a simple program to simulate the resulting machine.
+
+However, several persistent problems are encountered with this method. Firstly, it becomes exceedingly tedious to specify larger Turing machines, as the transition function must be fully specified for each combination of state and tape symbol input. Development becomes incrementally slower, with each new state requiring a mapping for every symbol. Worse, each new symbol requires the programmer to revisit every existing state to add a mapping.
+
+Secondly, certain common structures found in Turing machines are not practical to implement in this manual fashion. For example, shifting a section of the tape to the left or right is a common and exceedingly useful tool, however it requires a fully connected sub-graph of states representing each symbol. Worse, if it is a shift of limited length, then each step of the shift requires a state for each possible symbol, making this even larger. Although these constructions are conceptually very simple, they are excessively tedious and error prone to implement manually.
+
+These concerns would suggest the need for a higher level language to describe these higher level features that are not captured by simply specifying the formal description. However, it must not lose sight of the goal, which is to aid in developing intuition and understanding of Turing machines themselves. Therefore any language provided for this task must offer these abstractions at an appropriate level so as to not obscure the nature of the algorithms they describe.
+
+This project aims to fulfil this need by developing an appropriately high level programming language for describing Turing machines, incorporating syntactic structures that will help to manage the increasing complexity and minimise tedious copying of work that provides no benefit to teaching.
+
+Once a suitable language has been developed, a compiler will be produced to allow descriptions written in this language to be simulated and tested with different inputs. The compiler will perform all the tedious mechanical busywork to translate the succinct description written in the new language into the complete state by state formal specification of the machine. A key necessity is that this process preserves the clear relationship between the programmer's original intent and the resulting formal specification. If the translation produces a representation which the student cannot clearly associate to their intent and easily reason about then the utility as a teaching tool is lost, regardless of whether the translation is functionally equivalent.
+
+To make this language more practical for students to work with, this project will also develop a debugging tool. This will have several features to make it easier for students to diagnose problems they encounter when using the language. This will help to make the association between the student's source code and the output machine more clear.
+
+Finally, IDE integration will be used to provide a single coherent environment for development, compilation and debugging. This will provide graphical interfaces to make it simpler to use the provided tools, as well as providing syntax highlighting, code snippets and shortcuts to aid development.
+
+\section{Context survey}
+
+In researching this for this project, there seemed to be several publications and software products which were tangentially related to the aims of this project, many of which provided useful techniques which proved useful. However, none had the specific aims of this project, and each has notable features which would make them unsuitable as a solution to the issue itself. In the following sections we describe each body of work, note their useful and relevant features, and the features which made them unsuitable as a direct solution for this task.
+
+\subsection{Turing machines}
+
+The traditionally formulated Turing machine forms the basis of this project. Since Allan Turing's initial publication\cite{turing} the Turing machine has been formally defined in many sources, each of which is equivalent for some given assumptions. For example, the definition as given in Sipser\cite{sipser} is a 7 tuple of the following objects:
+
+\begin{itemize}
+	\item $Q$: the finite set of states in the machine
+	\item $\Sigma$: the finite alphabet of input symbols
+	\item $\Gamma$: the finite alphabet of tape symbols, which contains a distinct blank symbol $b$ and is a superset of $\Sigma$
+	\item $\delta : (Q\backslash\{q_a, q_r\})\times\Gamma\to Q\times\Gamma\times\{L,R\}$: the transition function
+	\item $q_0$: the start state
+	\item $q_a$ the accepting state
+	\item $q_r$ the rejecting state
+\end{itemize}
+
+Where the blank symbol is a unique symbol to all other symbols, $q_{a}\neq q_{r}$, and $L, R$ indicate movement to the left or right respectively. Each of these elements is necessary to fully and mathematically specify how each machine should behave. This full specification is necessary in a mathematical sense to allow rigorous proofs. The full specification is also beneficial because it makes simulation of the machine extremely simple.
+
+In practice however, the only element which needs to be explicitly specified is the transition function, as all other elements can be derived from it; The function is required to provide a mapping for all the states and all the tape symbols, ensuring they are fully specified by the function itself. Additionally, the blank symbol and accept and reject states are unique so do not need to be specified. Finally if the input alphabet is limited to the tape alphabet then the machine is fully specified.
+
+Additionally, the line by line specification causes the problems with tedium which this project aims to address; namely that minor logical extensions to an algorithm require incrementally more work as the number of symbols and states increases, and that common formulaic constructions in the machine still have to be fully and manually described. The developer of the machine will imagine simply adding a symbol to the machine to account for one specific edge case for example, but must unnecessarily and arbitrarily specify how every state in the machine must behave in its presence. Similarly, the machine's developer will think about its operations in terms of these larger formulaic constructions such as loops, shifts, conditional branches and tape traversals, they must still express these abstract structures manually.
+
+Turing machines are a necessary subject of teaching in complexity theory, as they form the mathematical basis on which the majority of work in this field is based, and a solid understanding of these machines is vital in understanding some of the more complex theories. In order to provide good quality teaching, the capabilities of these machines has to be described at a high level which is comprehensible to students. For their use in mathematical proofs however, it is beneficial for the elements of the model to be as elementary as possible, at odds with the needs of teaching. Therefore teaching Turing machines suggests a need for a  related but more complex presentation than their basic mathematical form.
+
+\subsection{Wang B-machines}
+
+The Wang B-machine\cite{wang} is a model of computation which more closely reflects the programming of real computers, while still retaining a resemblance to the Turing machine. The B-machine consists of programs created from lists of instructions followed sequentially, and flow control statements which redirect execution of the program based on conditional tests. The machine has an infinite tape of discrete cells and a finite alphabet of tape symbols, similar to a Turing machine. The machine has four instructions; move left, move right, write a given symbol to the tape and go to the given instruction if the current symbol matches a given symbol.
+
+It can be shown that this model is equivalent to the Turing machine model with a relatively simple transformation between the two\cite{stanford}. The sequential branching structure of this model's algorithms closely reflects real low level programming, therefore this seems a preferable to the traditional Turing model in terms of teaching.
+
+However, the translation comes at a cost. Each statement in the B-machine is translated to multiple Turing machine states which move the tape head forward and back repeatedly in order to place the tape head in the same position when beginning a new instruction. Therefore using the Wang B-machine model is not a zero cost abstraction, and this makes it harder to relate the algorithmic description to the machine and thus negating its benefit as a teaching tool.
+
+The B-machine model also suffers from the same issues as Turing machines in that they lack expressive power, as large and complex operations such as shifting the tape left or right must be specified with an aggregation of simple instructions, despite being considered a single instruction at an algorithmic level. The ability to refer these common complex instructions as a single unit is a key necessity in order to minimise the complexity in teaching and mitigate the tedious work needed to utilise these models.
+
+In summary then, the B-machine provides a more natural way to express algorithms which can draw on existing programming experience to aid learning. However this model hinders effective teaching with a lack of complex expression and is a costly abstraction to apply on top of the Turing model.
+
+\subsection{Online Visual simulators}
+
+Several tools are freely available online which provide a graphical representation of Turing machines and permit users to develop and simulate them visually. These tools all vary in some aspect, but the general features they share are a simple editing environment and a visual representation of both the state graph of the machine and the tape contents as the machine runs.
+
+The visual aspect of these tools is a very powerful aid to understanding and therefore teaching. Some tools feature the ability to edit the state graph visually as well, which aids the developer tremendously by allowing them to apply natural intuitions about visual patterns and structures.
+
+However these tools still lack the necessary expressiveness for complex operations necessary for effective development, as with the previous models. They also lack the sequential algorithmic structure which was seen as a key beneficial feature of Wang's B-machines. The environments these online tools provide are not intended for larger projects, which results in them being awkward to use with version control, and not suitable for editing larger scale projects.
+
+\section{Requirements specification}
+
+The requirements specification for this project are broken down into sections corresponding to each of the distinct software deliverables. Each of these sections specifies the key set of features that each of the deliverables must implement. Of the software deliverables, the compiler and language were the key focus of this project, while the others are secondary priority.
+
+\subsection{Language}
+
+The primary deliverable is a design for a programming language with which to express the specification of a Turing machine. The language derives several features from the abstract for this project, while some are reasonable features that provide either expressive power or quality of life improvements. The language requires the following features:
+
+\begin{itemize}
+	\item The ability to express any Turing machine
+	\item Labeled blocks of definitions as a syntactic structure for managing complexity
+	\item Syntactical shorthands for loops, repetitions and shifts
+	\item Flow control statements based on groups of symbols
+	\item Named groupings for symbols for use in flow control statements 
+	\item Marked and unmarked symbols
+\end{itemize}
+
+\subsection{Compiler}
+
+The compiler is expected to posses a minimal set of the normal capabilities of a standard compiler program. The main intent is to create a simple tool to address the task at hand, so complex features were not a priority. The compiler requires the following features:
+
+\begin{itemize}
+	\item Accept any correctly formed specification in the language
+	\item Reject all syntactically invalid specifications in the language
+	\item Reject all semantically invalid specifications in the language
+	\item Provide feedback describing the location and cause of any rejection
+	\item Output a machine representation which corresponds logically and predictably to the programmers intent
+\end{itemize}
+
+The syntactically invalid and semantically invalid specifications are distinct concerns, syntactic errors corresponding to errors in the way the source file is written, whereas semantic errors correspond to errors in the concept described by what is written. The error feedback is vital for ease of use, as nonspecific compile errors are notoriously hard to correct. The final specification seems somewhat vague, but in essence it asserts that each syntactic construct should correspond to an identifiable element of the final machine in an easily identifiable way, and that a small modifications to the source should cause a proportionally small effect and not cause a large unexpected change to the output.
+
+\subsection{Debugger}
+
+The debugger is intended to provide a developer the necessary tools to identify and investigate unusual behaviour, to easily determine its source and finally to deduce the change necessary to produce the correct behaviour. The debugger is required to allow the following:
+
+\begin{itemize}
+	\item Pausing and unpausing of live execution
+	\item Setting breakpoints to stop a machine
+	\item Breakpoint conditions based on states and tape symbols
+	\item Forward stepping of a paused machine
+	\item Backward stepping of a paused machine
+	\item Setting the current state
+	\item Setting the current tape symbol
+\end{itemize}
+
+\subsection{IDE integration}
+
+IDE integration is intended to provide a convenient environment to use the previously developed tools. Each IDE will tend to use a different interface for integrating third party tools as with this project, so the features are subject to the capabilities of the chosen IDE. However, the integration is expected to:
+
+\begin{itemize}
+	\item Allow all features of the compiler to be accessed from the IDE
+	\item Allow all features of the debugger to be accessed from the IDE
+	\item Provide specialised syntax highlighting for the language 
+\end{itemize}
+
+\section{Software engineering process}
+
+The software engineering process used in this project was largely based on the "chaos model"\cite{raccoon} of software development. Therefore development progress largely followed the "chaos lifecycle" which this model describes. The essence of this model is that a software project can be thought of as a loop of development phases connecting from one status quo, through specification, design, implementation, integration and finally a return to a new status quo. However, this model emphasises that each of these phases are themselves defined by smaller loops of the same phases, as are the phases of that loop and so on, forming a "fractal problem solving loop". The scale of these loops are bounded at the lowest level by a single line of code, and at the highest level by the project as a whole.
+
+The key feature of this methodology is that at no point is development arbitrarily restricted to a lifecycle phase as a whole, such as in the waterfall or spiral methodologies. Instead, various phases of development occur at all levels and all times of the project. The idea that the project as a whole is in any given phase is simply a matter of perspective on the part of the developer. To quote from the original description, "Maintenance starts on 'day one' and requirements analysis finishes at the end of the project"\cite{raccoon}
+
+The strategy that the chaos model emphasises for tackling such software projects is to resolve the most important issue first, where importance is gauged in terms of the level at which the issue is specified, how urgently a solution is required and to what extent it will enable other issues to be resolved in future, regardless of level. This strategy provides a rational way to work through the chaotic fractal-like structure of a project as presented above.
+
+This process seems a highly unorthodox choice, however it was an ideal fit due to the project's well defined and static scope, and also because of project's modular component based nature. This strategy also complements the fact that this is a one person project, as it ensures there is always a single well defined task to focus on, with a reasonably clear method for subdividing and tackling tasks which cannot be directly resolved. This methodology is also appropriate due to its minimal overhead when compared with other methodologies which are tailored towards teams of developers or dynamic project scopes.
+
+Version control tools play into this methodology well. Once a development loop is completed at any level, a status quo is reached, and this may be checked into version control software. Prototyping and experimentation for subsequent development loops can then be done without fear of a loss of progress, as the previous status quo is preserved by the version control software. Version control makes it easy to recover from a failed development loop at any level, as the version history preserves the status quo for the appropriate level. This makes it easy to return to a workable project state if a faulty avenue of development is pursued, which the chaos method regards as inevitable. In this project, GIT was used for version control due to its ubiquity and easy to use web interface, however any modern version control tool would have been equally appropriate.
+
+\section{Ethics}
+
+This project has negligible ethical considerations due to being primarily software development based. However in order to evaluate the success of the project, the intention was to perform user testing with a small group of students who had previously taken the computational complexity module, and gather feedback through conversations with participants.
+
+This would involve recording and publishing the opinions of these students, which would have ethical implications. However these could largely be addressed by anonymising any feedback gathered and also requiring consent forms. Additionally, an ethical approval was sought and approved for this purpose.
+
+These considerations became largely irrelevant due to the COVID-19 pandemic, as the necessary group of students would be inaccessible for the user testing. It would be infeasible to remotely install the project and to gather feedback for each participant individually, so this evaluation was simply not performed.
+
+\section{Design}
+
+The design for this project draws on the necessary elements from the requirements, influenced by the positive features of the works described in the context survey.
+
+\subsection{Language}
+
+When developing algorithms, an intuitive way to represent them is as a list of instructions to be followed in order, with flow control statements such "go to the given line if this condition is true". To follow the algorithm you start at the first line and do as each line of the algorithm instructs in order, until told to stop, keeping a track of your progress by noting the line number of the instruction you are currently obeying. The key aim for this language was for students to specify a machine in this intuitive way, and then observe how these natural instructions correspond to structures within a Turing machine.
+
+\subsubsection{Input and output mappings}
+
+Each syntactic structure in the language takes an implicit "input mapping" and produces an implicit "output mapping" which is used to determine the entry and exit points of the the structure for the purposes of flow control. The input and output mappings are designed to abstract over sets of source and destination states. This allows algorithm flow to be reasoned about and manipulated as an object. This is necessary to allow entire subsections of Turing machines to be composed together without having to explicitly specify transitions.
+
+\subsubsection{Instructions}
+
+Based on the method of describing algorithms above, the most primitive unit in this language is a single instruction, which takes up a single line. The forms an instruction may take are intended to capture the set of possible operations that could be applied to a Turing machine, regardless of the operation's actual complexity.
+
+The point to note is that instructions do not correspond directly to a states in the Turing machine. Some instructions are represented with no states, while others are represented by multiple states. Some instructions may be represented by a varying number of states depending on the context of the surrounding algorithm. While this would seem to be confusing because the programmers is no longer directly in control of the states this is actually beneficial for two reasons. 
+
+Firstly, the programmer will tend to reason about the machine in terms of abstract instructions instead of states regardless, so the ability to express an algorithm without specifying states actually better reflects the programmer's thinking.
+
+Secondly, when the algorithm is modified in a specific location in the source code, the compositional property of instructions means that it is unlikely that any other instructions will need modifying. This is because the instructions accept abstract input and output mappings, which allow them to compose together even if they may logically refer to different states. If the programmer were required to specify states manually, a small change in one part of the algorithm may require a cascade of changes all over the source code.
+
+The types of instructions will range in mechanical complexity from extremely simple to extremely complex, but all remain conceptually simple to allow the programmer to treat them as unitary operations. The simplest operation in a normal Turing machine is to follow a normal state transition from a source state to a destination state after matching the current tape symbol, updating that tape symbol and moving to an adjacent tape cell. In this algorithm focused representation, the source and destination state are managed implicitly, and the symbol matching is captured by the flow control statements. Therefore the simplest operation in this case is to update the current tape symbol and travel to an adjacent tape cell. This will take the following form:
+
+\begin{verbatim}
+write X, go left
+write Y, go right
+\end{verbatim}
+
+This is the basic form we require to achieve Turing completeness, however we also want to make commonly used simplifications and shorthands available to the programmer. One of these is to leave the current tape symbol unchanged. This is done in a traditional Turing machine by having each transition match and update the same symbol, effectively reading it and putting it back on the tape. In the algorithmic case, this equates to a move left or right, so it is represented as follows:
+
+\begin{verbatim}
+go left
+go right
+\end{verbatim}
+
+Another commonality in algorithmic thinking is instruction level repetition and looping, for example to repeat the same instruction a fixed number of times in sequence, or to repeat it until some condition is fulfilled. This can be represented with an abstract pattern of structure in a Turing machine, however in the algorithmic sense they work as a modifier to any single instruction. There is also theoretically no reason why multiple of these modifiers could be applied at once in some sequence. Therefore this language represents lists of modifiers on instructions like so
+
+\begin{verbatim}
+write X, go left until Y
+write Y, go right +15 times
+go right while X +5 times until Y
+\end{verbatim}
+
+There are potentially other more mechanically complex instruction types which could be considered, however their inclusion will be dependent on the scope of this project and limitations due to time constraints.
+
+\subsection{Sequences of instructions}
+
+Linear sequences of instructions are specified by listing them on successive lines. An instruction which follows another has the semantic effect of applying the effect of the first instruction and then the second. This is achieved by connecting the output mapping from each instruction to the input mapping of its successor.
+
+Sequences of instructions always have an implicit entry mapping which connects to the first instruction where algorithm flow begins. However sequences may or may not have an output mapping, depending on whether the sequence ends with an exit point, which explicitly directs the algorithm to go elsewhere to continue. The \texttt{do, accept, reject} instructions act as exit points for a sequence, meaning the output mapping of the preceding sequence is directed to this exit point instruction and the sequence as a whole does not have an output mapping. Because instructions must always be given an input mapping, exit point instructions can only come at the end of a sequence.
+
+In some cases an instruction sequence is required to have an exit point, sometimes they are required to have no exit point, and sometimes there is no requirement. This is determined by the syntactic structure the sequence is contained in. For example, The initial sequence in this program is required to have an exit point, the sequence within a loop is required to have no exit point, and the cases in an if statement may or may not have exit points.
+
+\subsubsection{Instruction blocks and references}
+
+Sequences of instructions may commonly be grouped together and named as if they were a single instruction, to allow greater expressiveness when describing and reasoning about algorithms. As such, this language allows sequences of instructions to be labeled with any arbitrary unique name and referenced as a single block.
+
+Once a block has been named, other blocks may reference it as an exit point, such that once the algorithm reaches the reference it continues to execute from the first instruction of the referenced block. A block may be referenced from any block in the source code, including itself, which allows looping behaviour.
+
+\begin{verbatim}
+write X, go right
+do named_block
+
+named_block:
+    write Y, go left
+    write Z, go right
+    do infinite_loop
+
+infinite_loop:
+    write X, go right
+    do infinite_loop
+\end{verbatim}
+
+The referencing behaviour does not correspond to any operation in the resulting Turing machine, as it simply connects the implicit output mapping of the preceding instruction to the input mapping of the first instruction of the referenced block. Therefore a reference is semantically undefined if it connects to itself with no state intervening, however such cases can be detected and flagged as an error.
+
+\begin{verbatim}
+do undefined_loop:
+
+undefined loop:
+    do undefined_loop
+\end{verbatim}
+
+Blocks are required to have an exit point as the final instruction in its sequence. This ensures that the algorithm is semantically valid, so that there is always a definite point to exit the block.
+
+\subsubsection{Flow control}
+
+Flow control instructions instruct the algorithm to follow different branches of instructions based on conditions. They do this by dividing up their input mapping into separate output mappings, grouped based on conditions the mappings satisfy. These output mappings then serve as the input mappings to different sequences of instructions.
+
+These control structures may combine or redirect the output mappings of the instruction sequences they contain. They will also take on the property of either having an exit point or not based on the instruction sequences they contain. For example, an "if/else" statement is regarded as an exit point if all the contained instruction sequences have exit points. If not, then the "if/else" statement is not regarded as an exit point.
+
+\subsubsection{Symbol groupings}
+
+Commonly an algorithm uses conditionals expressed as some property satisfied by a group of symbols. This language allows groups of symbols to be named and used in conditional statements. Additionally, these symbol groupings may be used in the definition of subsequent symbol groupings to form larger groups.
+
+Mentioned in the specification is the common need for marked and unmarked symbols. Therefore this language predefines these symbol groupings for use by the programmer. Despite being specially predefined however, they behave identically to the other symbol groupings and may be used anywhere a symbol grouping would be syntactically valid.
+
+\subsubsection{Turing completeness}
+
+In order for this language to be useful, a minimal requirement is that is capable of describing any Turing machine the designer would wish to implement. This can be proven by making use of some of the elements above
+
+The first block of statements has an implicit state, and the sequence of instructions following it will customise it. If we use an if else block with a single symbol for each condition, we may specify each individual transition out of this first implicit state, into other blocks. By making each if statement block consist of a write and travel statement followed by a do reference, each of these statements is guaranteed to create a distinct state which may be claimed by the referenced block.
+
+With this, each block behaves effectively like a unique named state, each branch in the if statement represents a transition out of this state with the given output symbols and travel direction, and in this way any Turing machine may be described.
+
+However, a key thing to be noted is this does not actually match the Turing machine one would expect, as each transition is represented by a unique state and no individual state represents a block itself. However this machine behaves identically to the minimised version and can be made mathematically equivalent by combining together redundant states.
+
+\subsection{Compiler}
+
+The compiler is designed to implement the language as described above, and as is standard for compilers is broken down into distinct sub-components with specific roles
+
+\subsubsection{Lexer}
+
+The lexer is designed to break up the input source text into distinct tokens with limited types in order to simplify parsing and improve performance. The lexer identifies specific keywords as well as variable user inputs and determines their type based on matching rules expressed as regular expressions.
+
+The lexer also performs the first round of error detection, as it is able to quickly identify malformed symbols. This occurs when the source text contains a section which does not match any of the available regular expressions. In this case, the lexer can immediately raise an error to inform the user of this malformed section of text.
+
+\subsubsection{Parser}
+
+The parser utilises the symbols provided by the lexer, and works by identifying syntactic patterns to group symbols together into larger syntactic constructs, incrementally building up some structure which represents the specific pattern of symbols identified. The design of this parser will tie extremely closely to the syntactic structure of the language, and depending on implementation details is usually defined in a similar, recursive fashion.
+
+The parser also performs a second more thorough round of error checking, this time identifying when a sequence of symbols cannot be incorporated into any available pattern. In this case, it is usually possible to inform the programmer what pattern the parser was attempting to follow and what symbol was expected, which is usually enough to indicate the source of the problem.
+
+A common trade-off in compiler design is at what level to check for the majority of semantic errors or larger scale syntactic errors. In many cases these can be worked into the grammar for the language and prevented structurally, however this complicates the design of the parser and affects performance. The alternative is to design the parser to detect only the most obvious syntactic errors and then to perform a more rigorous sweep later on. In this case, the number and complexity of these error cases made it infeasible to design the parser around them, so to reduce the complexity the parser delegates this responsibility to the following sweep.
+
+\subsubsection{Static checking}
+
+After the most obvious syntactic violations are detected, it is possible to enforce much more subtle and wider syntactic rules. For example, ensuring that blocks have valid exit points when necessary and ensuring "if/or/else" sequences do not have overlapping or redundant conditions.
+
+The checks are much more easily performed at this stage because the program structure has been parsed into an object which can be easily and thoroughly explored. The checks can then be easily expressed as assertions on the structure of this object. Due to the recursive nature of the object, these checks may be defined by functions which explore the object recursively, which allows the checking algorithm to be neatly expressed
+
+\subsubsection{Code generator}
+
+The generator performs the final step of taking the parsed and validated program object and translating its structure into an equivalent Turing machine representation. This is done incrementally by building up a Turing machine from simple "snippets" which represent the abstract operations. Each snippet takes in an input mapping and produces an output mapping, and the generator joins these snippets together modularly based on the structure of the parsed program. The snippets are frequently parameterised structures which may accept other snippets as parameters, which it uses to generate a larger snippet.
+
+The generator also interprets conditional symbol groupings and determines the specific symbols which satisfy the group, as well as the symbols which do not. These are then used by the snippets to create transitions for each individual symbol belonging to the group.
+
+The generator also performs a final sweep of error checking, identifying abstract semantic error classes. For example, if a block references itself, it is possible for the reference to form a semantically undefined loop to itself. This is easily and efficiently detected when generating the Turing machine but would be impractical to detect during earlier stages.
+
+The generator generates the states themselves, but for the final machine to be interpretable by the programmer they must be uniquely and helpfully named, so the generator also labels the states based on information associated to the syntactic structures by the lexer and parser.
+
+\subsection{Debugger}
+
+The debugger will be command line driven for two reasons. Firstly, this makes it drastically simpler to design and implement. Secondly, and more importantly, it makes it easier for other tools to interface with it, making it easier in turn to do IDE integration. The hope is that it should be possible to write a very simple driver program for this purpose.
+
+\subsubsection{Loading}
+
+The debugger will load the saved file containing the compiled Turing machine description. It will then use this saved data to instantiate its simulation of the machine, along with necessary metadata such as state names and source line numbers. Once this loading is complete the debugger should wait for the user to start the program, to allow them to set breakpoints and other settings
+
+\subsubsection{Breakpoints}
+
+The debugger should let the user set and clear breakpoints whenever the program is paused. The breakpoints should be set on specific lines, but could also depend on state names. Additionally, breakpoints may be conditional, so they only trigger when a specific condition is also true such as a given symbol on the tape.
+
+When the program is running, each time the machine switches state it should check to see if there is a breakpoint for the given line, and if there is a condition which is satisfied on that breakpoint. If so, then the program should pause automatically, and indicate the current state to the user
+
+\subsubsection{Forward and backward stepping}
+
+When paused the user should also be able to step the machine forward and backward manually. This is very simple for forward stepping as the machine simply has to be simulated as normal for one step and then paused again. This will be useful for determining when a particular effect happens in a sequence of actions.
+
+Backward stepping is slightly more complex as it is not possible to uniquely determine the previous state of a machine from a given configuration. Therefore the debugger will have to track the sequence of states and symbols it has visited to reach the current state in order to reverse the effect on the tape. Depending on its usefulness, the debugger could either store a single stack representing one history, or it could store a branching tree of histories that the programmer has explored in the given run. The backward stepping will be useful for the user to rewind important action sequences and run them forward again.
+
+\subsubsection{Setting the state and tape symbols}
+
+When paused the user should be able to manually set the current machine state and which symbols are on the tape. This allows the user to quickly test the effect of changes they may wish to make to the machine without having to fully recompile it. This should be relatively simple to implement, as the current state and tape symbols are simply variables available to the compiler to modify. One issue may be how to present the options for different states to the user in an understandable way.
+
+\section{Implementation}
+
+The implementation of this project follows from the design. The language itself was entirely a design task, so it is not included in this section.
+
+elaborate
+
+
+\subsection{Language}
+
+The language developed from the original designs alongside development of the compiler, as certain features were found to be more or less practical or severe difficulties were encountered. These developments frequently resulted from limitations in the lexer/parser generator tools.
+
+For example, the format of specific tokens is somewhat more limited than hoped. Number values must be prefixed with a plus symbol in order to discern them from a symbol containing a digit. It was hoped that the separation of numbers and symbols could be done contextually with the aid of the parser, however it was found to be too difficult to pass information back in this way.
+
+The final grammar for the language is listed below in Extended Backus Naur Form:
+\begin{itemize}
+    \item Uppercase words are tokens (terminals)
+    \item Lowercase words are grammar rules (productions)
+    \item The pipe symbol ($\vert$) is an alternative
+    \item The star symbol (*) indicates zero or more repetitions
+    \item The plus symbol (+) indicates one or more repetitions
+    \item Square brackets denote an optional component
+    \item Round brackets group elements at higher precedence
+\end{itemize}
+This corresponds directly to the rules that the parser implements.
+
+\begin{verbatim}
+program     -> group* statement+ block*
+group       -> IDENTIFIER EQUALS condition
+block       -> IDENTIFIER COLON scope
+
+scope       -> INDENT statement+ DEDENT
+statement   -> conditional | operation | ACCEPT | REJECT | DO IDENTIFIER
+
+conditional -> if_case cases or_case* [else_case]
+if_case     -> IF condition scope
+or_case     -> OR condition scope
+else_case   -> ELSE scope
+
+condition   -> grouping (COMMA grouping)*
+grouping    -> symbol | IDENTIFIER | MARKED | UNMARKED
+
+operation   -> [write COMMA] travel modifier*
+write       -> MARK | UNMARK | WRITE symbol
+travel      -> GO LEFT | GO RIGHT
+modifier    -> (WHILE | UNTIL) condition | REPEAT NUMBER TIMES
+
+symbol      -> [MARKED] SYMBOL
+\end{verbatim}
+
+Most of the tokens the language uses keyword tokens, written as lowercase forms of their token names. These keywords are listed as follows:
+
+\texttt{IF, OR, ELSE, ACCEPT, REJECT, WRITE, GO, DO, MARK, UNMARK, MARKED, UNMARKED, LEFT, RIGHT, WHILE, UNTIL}
+
+There are three symbolic tokens which are named after the punctuation symbol used to write them:
+\begin{verbatim}
+EQUALS  "="
+COLON   ":"
+COMMA   ","
+\end{verbatim}
+
+There are three "data tokens" which may have any value that corresponds to a specific pattern. These are expressed in code as RegEx patterns, but for the sake of clarity they are described here in English:
+\begin{itemize}
+    \item\texttt{NUMBER}: a plus symbol followed by one nonzero digit, followed by zero or more digits
+    \item\texttt{IDENTIFIER}: one alphabetical character followed by one or more alphanumeric characters
+    \item\texttt{SYMBOL}: any one visual character (i.e. excluding whitespace or special characters)
+\end{itemize}
+
+Finally there are three whitespace characters
+\begin{itemize}
+    \item\texttt{INDENT}: any sequence of whitespace which results in the next line starting 4 spaces to the right
+    \item\texttt{DEDENT}: any sequence of whitespace which results in the next line starting 4 spaces to the left
+    \item\texttt{NEWLINE}: a single newline character
+\end{itemize}
+
+\subsection{Compiler}
+
+This compiler largely follows the main design focuses of mainstream compilers, so it is very amenable to generator tool support. As mentioned above, the compiler developed in tandem with the language as opportunities and limitations were discovered during the development process.
+
+The components are structurally arranged in layers, with each successive component only relying on the previous components. This meant that the components could be developed in order, and that components only needed to be revisited as if later components required extra features. This helps greatly in managing the complexity of the program, as any problems could be solved by working back through the layers in order to find the source of the problem. This worked well in the case of the lexer for example, once the token definitions and whitespace tracking were finished it never needed to be modified again.
+
+\subsubsection{Language choice}
+
+The choice of programming language was an important starting point for implementing the compiler. There were a few main considerations when making this choice, language expressiveness, development experience, library and tool support. There were a limited set of options, as it would be infeasible to learn an entire language in the time frame of this project. Therefore the options were Java, C/C++, Python or Haskell.
+
+Library and tool support is one of the most important factors in the choice of language for this project. The vast majority of a both lexers and parsers operate in exactly the same way irrespective of the language they are intended for, so lexer and parser generator tools simplify design by generating these sections, to allow the designer to focus on more specific features of the compiler.
+
+Haskell has a highly flexible lexer/parser hybrid tool named Parsec which allows compilers to be defined functionally, and the language lends itself very well to mathematical work such as with Turing machines. However the parsec tool is known to become inefficient for larger and more complex projects, and the language itself would make larger project organisation and many technical details of the project difficult to implement. Python, has exceedingly good library and tool support, and the language is suitably flexible enough to express the technical details. However, it suffers from a lack of strong compile-time type checking, which makes sporadic runtime exceptions a significant headache. Plain C is has a proven track record when it comes to language design tasks, and has the well known Lex/Flex and Yacc/Bison family of parser generator tools. These tools have been the industry standard for language design tasks in C for several decades and are well documented and supported. However, the lack of more powerful language features such as classes, inheritance, generic types, standardised container types and others would make it excessively hard to tackle a project of this size. These issues alone are sufficient to rule out these languages.
+
+In terms of development experience, Java is far superior, with precise compiler warnings and errors. Conversely, C++ is notorious for its cryptic and unhelpful compilation error messages. At runtime too, Java is relatively less likely to encounter some critical exception, and even if so will provide precise location based error messages which will make bug-fixing very simple. C++ on the other hand suffers from all manner of undefined behaviour errors which usually provide no location based error messages which makes bug-fixing very challenging
+
+Java and C++ both reasonable regarding both the lexer/parser generator tool support and the languages themselves. C++ inherits the Flex and Bison generator tools from C, specifically designed for generating lexers and parsers, which are exceedingly helpful. Conversely, Java has ANTLR, JavaCC and several others. Flex/Bison have been around for several decades and have vast amounts of documentation, example code and support. Conversely, many of the Java tools are relatively new in comparison, and have less comprehensive documentation and support.
+
+In summary, several languages were investigated and found to be infeasible, and of the remaining candidates C++ seemed the most appropriate for this task due to its maturity, tool support, expressive power and widespread support, even in spite of its poor development experience.
+
+\subsubsection{Tool support}
+
+Once the language was decided, the next key decision was which tools to use. As mentioned above, lexer and parser generators work to handle the technical details of these components. With this, the developer can simply focus on the specific actions the component should use to process the language itself.
+
+For the lexer, the Flex tool was used. This tool reads a specialised input file which defines the token types and a regex pattern for recognising these tokens, as well as any side effect actions that should occur when this token is recognised. The tool then interprets this and generates a C++ file which defines a lexer for these tokens. There is similarly a parser generator tool called Bison, which is designed to work in tandem with Flex. This tool takes a different type of specialised input file which defines a context free grammar for a language, built up out of the tokens defined by the Flex lexer. This file also defines side effect code actions. In this case, the side effect code actions are used to allow the resulting parser to build up a data structure representing the source file being parsed
+
+Both these tools are extremely helpful as they are guaranteed to handle the lexing and parsing elements correctly, allowing the developer to focus only on the correctness of the language itself as opposed to the correctness of the underlying parsing process.
+
+However, many issues were encountered when beginning development with these tools, and a large proportion of the project time was spent resolving these issues. Firstly, Flex and Bison were originally designed to compile to plain C header files, and theoretically the C language is contained as a subset of C++ and so this should not cause an issue. However there are not only subtle semantic differences between the languages themselves, but also more abstract differences relating to the doctrines and best practices of the two languages.
+
+Firstly, C has no concept of generic types, and as a result of this the tools themselves had only limited support for these types of containers. While it was possible to use any arbitrary code in the side effect actions in Flex and Bison, the rules in the Bison are intended to "return" values which their parent rules may then utilise, the mechanics of which are handled by Bison itself. To allow it to generate code to pass these types around, the user provides the type names in definitions at the top of the file, however it uses these names directly as textual substitutions which are not generally type safe in C++. However, to do without these type parameterised containers would give no benefit to using C++ over C, making the project as a whole wildly impractical.
+
+Bison has several settings and customisations which can make the tool C++ aware and parcels the parser functionality into a class and namespace. Flex also has equivalent settings, however these make Flex and Bison incompatible with each other, either failing to compile or having undefined behaviour. On investigation, it was found that the C++ compatibility options for Flex are significantly underdeveloped and have several prominent and well documented bugs (this is noted in the source of the flex project itself). The solution found was to use the Flex tool in its standard C form with the Bison tool in its C++ compatibility mode, and designing the lexer specifically within the confines of the C language. Limiting the lexer only to C constructs is not a significant limitation, as the majority of the need for C++ structures occurs in the Parser.
+
+\subsubsection{Lexer}
+
+As discussed above, the lexer component relies on the Flex lexer generator tool. This handles the specific mechanics of lexing, allowing the designer to focus on the properties of the tokens themselves. As was also noted as a limitation above, this component is required to be written in C.
+
+Most tokens are keywords, which are a fixed sub-strings with no internal details. These rules simply consist of the keyword string as the pattern, with the side effect action of returning the token ID representing this keyword.
+
+A small set of the tokens have a variable structure. The identifier, symbol and number tokens may take any form limited by a pattern. For example, a symbol can be any single symbol surrounded by whitespace, an identifier can be any sequence of more than two symbols, and a number must start with a plus symbol and then any number. These each have a regex pattern which formally describes the patterns above, and the side actions perform a conversion from the captured string to the semantic value.
+
+This lexer is unusual in that it is whitespace aware. Most lexers are whitespace agnostic, so newlines, tabs and spaces are simply discarded. In this language, indentation is used to indicate scoping rules. To do this, the lexer has two variables to track the current indentation level. Whenever whitespace is encountered the lexer switches into a special mode which tracks the number and sequence of whitespace symbols encountered up until the first non-whitespace character is encountered. Once a non-whitespace symbol is encountered, it is placed back into the input stream to allow it to be read later. Then the side action runs through the sequence of symbols to determine the change in indentation level, and output a sequence of tokens which reflects this change. Finally the lexer switches back to its normal lexing mode to handle the following token.
+
+The lexer has some built in simplistic token level error handling, which rejecting malformed tokens that do not match any pattern, however its usefulness is very limited. In most cases, a misspelled keyword will instead be interpreted as an identifier, and a malformed symbol will be interpreted as several symbols. This lack of error detection is tolerable, because the erroneous pattern of tokens will be detected at the parser level instead.
+
+The final noteworthy component of the lexer is comment scanning. Comments have to be specially identified in order to ensure they do not affect the parsing of actual tokens. This lexer handles both block comments and line comments. For line comments, the double slash line comment symbol switches the lexer into a special mode which discards all characters in the input until a newline is encountered. Block comments work similarly but uses another distinct mode which discards symbols until the closing asterisk-slash is encountered.
+
+When the Flex tool is run, it uses all the definitions provided to generate a C++ file which implements a function which lexes the standard input stream. Each time the function is called, it returns the next available token lexed from the stream, or an end of stream indicator.
+
+\subsubsection{Parser}
+
+The parser uses the Bison parser generator tool to convert a special definition file, containing grammar rules with code side effects, into a parser for the language defined by the grammar. When combined with Flex, it is possible to use the tokens defined by the lexer in the grammar rules in the parser.
+
+The grammar rules are defined recursively, where the name of one grammar rule can be used in the definition of another, or even in the definition of the rule itself, and each rule produces a value as it runs. A rule begins by running its sub-rules in order (if it has any), each of which return a value to the parent. Then the side action for the rule runs, which can be any arbitrary code snippet, and can make use of the values from the sub-rules. The side action will perform any necessary side effects (if any), and then produce a value for the rule itself.
+
+In the case of this project, the parser builds up a data structure representing the structure of the source file. The structure is built up of recursively defined items which closely resemble the grammar rules of the language. The recursion follows the grammar rules down to the simplest production rules, where the values of the tokens are read and used to set values in the data structure, as well as to perform the specific side actions. Then the recursion follows the structure back up, passing simpler values up to the higher structure to be combined into larger and more complex values.
+
+The majority of the information in the final data structure is captured in by the shape of the structure itself, however there are extra pieces of information attached to the structure in various locations. For example, the top level program data structure contains an exhaustive set of all possible symbols this machine can accept, and each structure representing a statement contains the line number of the statement it represents. How these values are created are dependent on the side actions themselves and require further explanation.
+
+Each time a symbol token is encountered by the parser, its marked and unmarked versions are added to a globally tracked set which tracks all symbols the machine may accept. After parsing is returns to the top level, this set is copied into the program structure, which is used later by the compiler when determining how to define transitions for the machine. The blank symbol is automatically added to this set to reserve it for future use and allow it to be treated specially by the simulation program.
+
+The line numbers for statements are taken directly from the global variables automatically generated by Flex. As Flex reads tokens, it keeps note of the line and column number of the beginning and end of the token. This information is accessible during the parsing process, so the side action for a statement will query Flex for the location of the symbols in the statement.
+
+The type of parser which the Bison tool generates for us uses an algorithm known as shift reduce parsing. The details of this algorithm can be largely ignored, however they become relevant in cases where the limitations of that algorithm restrict the grammar forms it can recognise, resulting in what are known as shift/reduce and reduce/reduce conflict. These are when the algorithm does not know whether to read the next symbol or apply a label to the symbols it has already read, or does not know which of multiple equally valid labels to apply to the symbols it has read, respectively. These conflicts are statically detected when the parser is generated by Bison, which defaults to some "best effort" behaviour when these conflicts are encountered. Because of this, the grammar of the language had to be carefully designed around these limitations, and certain restrictions which would ideally have been an inherent property of the grammar's structure instead had to be deferred to subsequent static checking.
+
+The parser extends upon the minimal error handling provided by the lexer. The parser is capable of rejecting unrecognised sequences of tokens, which catches the majority of syntactic errors. As the parser operates it keeps a list of which syntax patterns it can use, and if it fails to match the sequence of tokens to a pattern it tries the next pattern. If all possible patterns are tried unsuccessfully, then the tokens cannot be parsed, and the parser uses the list of patterns it was trying to produce a list of tokens that would have worked instead. This information is printed as an error alongside the line and column number of where the parser managed to get to before the error. All this information usually suffices to indicate what the problem is and what the programmer should change to get it working.
+
+\subsubsection{Static checking}
+
+The static checking consists of three semantic level checks applied to the data structure obtained from the parser to decide if it is valid or not. These checks consist of sets of functions designed to recursively explore the structure to check that it meets the semantic requirements. These checks combined enforce the more abstract level language restrictions and ensure that the code generator is only provided sane data to work on 
+
+The first check is to ensure that all the statement blocks in the program have valid exit points as discussed in the design of the language. For simplicity of the grammar there is no syntactic rule enforcing block exit points, so it must instead be checked in this secondary sweep. The check is applied to the initial statement list and all the statement lists in the blocks (if any). The last statement in the list must have the one and only exit point in the list, if there is an exit point before the last statement or no exit point at all then an error is thrown. Individual statements have different conditions for exit points, \texttt{accept}, \texttt{reject} and \texttt{do} statements are exit points, operations are not exit points. Conditional statements can be exit points or not depending on the statements they contain. If all possible paths through the conditional result in an exit point then the conditional as a whole counts as an exit point, otherwise it is not an exit point.
+
+The second check is that the conditions for the different cases in a conditional statement do not overlap, so the conditional does not have ambiguous options. It does this by keeping track of the symbols with a set and throwing an error if a duplicate element is added to the set. If there are conditional statements in the branches they are also checked, however there is no requirement for distinctness between the parent and child.
+
+The final check is to ensure that the references to different blocks and groups are valid and there are no usages of undefined names. The list of group and block names are already available from the parsing step. Every condition and referential jump is looked up to ensure its name usages are contained in the list, and if not then an error is thrown.
+
+\subsubsection{Code generation}
+
+The code generator operates by using pattern based translations for each statement which composes together into a larger Turing machine. Each pattern has an input mapping and an output mapping to abstract over the inputs and outputs of a set of zero or multiple states. Output mappings must have a single output mapping for each symbol to a unique target state, while input mappings may have multiple input mappings for each symbol from different source states. By using these input and output mappings, the translation is free to create any abstract pattern of states for each statement.
+
+The generator begins by creating expansions for each of the symbol groupings into the full set of symbols they denote. Whenever a group name is used for the rest of the generation, it is looked up in the map to retrieve the full set of symbols it represents. The groupings are created in the order they appear in the file which prevents circular group referencing. Therefore if a circular or reference for a group is encountered, it is flagged as if the group name does not exist.
+
+The generator creates a distinct initial state that the machine will begin at, and then begins generating the initial statement block. Each statement in a block is iterated through, applying the translation for each statement and connecting the output of the previous state to the input of the next.
+
+A block jump reference triggers code generation for the referenced block, creating a dummy state associated to the block's name in a mapping. Whenever the name is referenced in the future, the mappings from the pre-existing state are used instead of re-generating the block. Once the block has been generated (or if the block had already been generated) the mappings from the dummy state are copied into the output mapping of the statement preceding the jump to connect it to the block. This system results in two important features; firstly, If a block cannot be reached it will not be generated. Secondly, a block can only ever be generated once, which prevents endless looping during the compilation.
+
+An important implementation detail is the management of these input and output mappings. It is important to prevent the semantically undefined zero operation loops as discussed in the design of the language. This type of error is detected during the code generation, because the information necessary for detecting it is automatically created during the generation process. The error occurs when an output mapping is taken from a pattern which creates no intervening states for some symbol mappings and simply pipes the mapping straight through from input to output. If the output is then somehow connected back to the input of the same pattern, a semantic loop with no states is created, which is has no sensible translation. To detect this, the input set tracks the set of tangible states which each mapping could have arrived from. If no intervening state is created for a mapping in the pattern, this state set is copied to the output set for the pattern, and then merged into the input mapping of whichever pattern the output mapping is connected to. If a duplicate state is detected in the the state set for any input mapping, then a loop is detected and an error is thrown to prevent the semantically undefined machine. The error may also utilise information about the pattern it was generating to indicate the line of source code and specific mapping which would cause the loop to allow effective debugging.
+
+A conditional statement partitions its output mapping into separate sets according to the symbol sets of the conditions, and connects each of these partitions to the input mapping of the statements for each case. If there is an \texttt{else} case then any remaining output mappings are connected to it, otherwise they are connected through to the statement following the condition. If the statements in any of the cases do not have an exit point, then their output mapping is also connected to the statement following the whole condition.
+
+Modifiers on an operation are applied as a pattern around whatever statement they are attached to. The modifier also specifies how and when the statement itself is generated. Loops are generated by partitioning the output states of the statement based on the loop condition, and attaching the mappings matching the loop condition back to the input mapping of the statement itself. The rest of the output mappings are used as the output mapping of the loop as a whole. Additionally, the same partitioning is applied to the input mapping before the statement loop is entered, so that if  the condition is not met then the loop is skipped entirely.
+
+Repetition modifiers create multiple copies of the statement for each repetition. Each copy of the statement is connected in a chain, with the first copy's input mapping used as the input mapping of the repetition as a whole, and the output mapping of the final copy used as the output mapping for the repetition as a whole. 
+
+Multiple modifiers can also be applied to a single statement, for example an inner and outer loop can test different conditions, or an action can be repeated in fixed size blocks until some condition is fulfilled. Interestingly, if one repetition is stacked on top of another then the number of repetitions multiply, which is the expected effect. A point of note is that this modifier may behave unusually and appear to have no effect if the statement it is repeating is permitted to have no effect (for example a loop may be skipped if the tape symbol doesn't match the condition).
+
+\subsection{Debugger}
+
+The debugger runs the machine assembled by the compiler. It displays output for each step the machine takes, showing the step number, the contents of the tape, the current state and the transition being taken to the successive state.
+
+\subsection{IDE integration}
+
+
+
+\section{Evaluation and critical appraisal}
+
+\subsection{Language}
+
+\subsection{Compiler}
+
+\subsection{Effect of COVID-19}
+
+
+
+\section{Conclusions}
+
+
+
+\section{Testing summary}
+
+
+
+\section{User manual}
+
+
+
+\section{Other appendices}
+
+\begin{thebibliography}{9}
+	\bibitem{turing}
+	A. M. Turing, On Computable Numbers, with an Application to the Entscheidungsproblem, Proceedings of the London Mathematical Society, Volume s2-42, Issue 1, 1937, Pages 230–265, https://doi.org/10.1112/plms/s2-42.1.230
+	\bibitem{sipser}
+	Michael Sipser. 1996. Introduction to the Theory of Computation (1st. ed.). International Thomson Publishing.
+	\bibitem{raccoon}
+	L. B. S. Raccoon. 1995. The chaos model and the chaos cycle. SIGSOFT Softw. Eng. Notes 20, 1 (January 1995), 55–66. DOI:https://doi.org/10.1145/225907.225914
+	\bibitem{wang}
+	Hao Wang. 1957. A Variant to Turing’s Theory of Computing Machines. J. ACM 4, 1 (January 1957), 63–92. DOI:https://doi.org/10.1145/320856.320867
+	\bibitem{stanford}
+	https://web.stanford.edu/class/archive/cs/cs103/cs103.1132/lectures/19/Small19.pdf, slide 14
+\end{thebibliography}
+
+\end{document}
